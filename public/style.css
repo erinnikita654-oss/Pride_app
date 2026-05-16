@@ -4,10 +4,23 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg: #0a0a0a;
+  --bg-card: #141414;
+  --bg-card2: #1a1a1a;
+  --gold: #c9a227;
+  --gold-light: #f0c040;
+  --gold-dim: rgba(201, 162, 39, 0.15);
+  --gold-border: rgba(201, 162, 39, 0.25);
+  --text: #f0e6c8;
+  --hint: #7a6a4a;
+  --danger: #c0392b;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--tg-theme-bg-color, #1a1a2e);
-  color: var(--tg-theme-text-color, #eee);
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
 }
 
@@ -17,28 +30,50 @@ body {
   padding-bottom: 20px;
 }
 
+/* Шапка */
 .header {
-  background: var(--tg-theme-secondary-bg-color, #16213e);
+  background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
   padding: 16px;
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid var(--gold-border);
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.header-logo img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .header h1 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 12px;
   text-align: center;
+  background: linear-gradient(135deg, #f0c040, #c9a227, #f0c040);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
+/* Вкладки */
 .tabs {
   display: flex;
   gap: 8px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.04);
   border-radius: 12px;
   padding: 4px;
+  border: 1px solid var(--gold-border);
 }
 
 .tab {
@@ -47,7 +82,7 @@ body {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -55,8 +90,9 @@ body {
 }
 
 .tab.active {
-  background: var(--tg-theme-button-color, #c9831a);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: linear-gradient(135deg, #c9a227, #a07d15);
+  color: #0a0a0a;
+  font-weight: 700;
 }
 
 .tab-content {
@@ -71,28 +107,40 @@ body {
 .list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .loading {
   text-align: center;
   padding: 40px;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
   font-size: 14px;
+}
+
+/* Секция */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  padding-left: 4px;
 }
 
 /* Карточка игры */
 .game-card {
-  background: var(--tg-theme-secondary-bg-color, #16213e);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: 14px;
   padding: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--gold-border);
 }
 
 .game-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
+  color: var(--text);
 }
 
 .game-info {
@@ -104,11 +152,11 @@ body {
 
 .game-info span {
   font-size: 13px;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
 }
 
 .game-info span strong {
-  color: var(--tg-theme-text-color, #eee);
+  color: var(--text);
 }
 
 .game-slots {
@@ -120,30 +168,31 @@ body {
 
 .slots-bar {
   flex: 1;
-  height: 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 3px;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .slots-fill {
   height: 100%;
-  background: var(--tg-theme-button-color, #c9831a);
-  border-radius: 3px;
+  background: linear-gradient(90deg, #c9a227, #f0c040);
+  border-radius: 2px;
   transition: width 0.3s;
 }
 
 .slots-text {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
   white-space: nowrap;
 }
 
+/* Кнопки */
 .btn {
   width: 100%;
   padding: 12px;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -151,51 +200,64 @@ body {
 }
 
 .btn-register {
-  background: var(--tg-theme-button-color, #c9831a);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: linear-gradient(135deg, #c9a227, #a07d15);
+  color: #0a0a0a;
 }
 
-.btn-register:hover {
-  opacity: 0.9;
-}
+.btn-register:hover { opacity: 0.9; }
 
 .btn-cancel {
-  background: rgba(255, 80, 80, 0.15);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 80, 80, 0.3);
-}
-
-.btn-cancel:hover {
-  background: rgba(255, 80, 80, 0.25);
+  background: rgba(192, 57, 43, 0.12);
+  color: #e74c3c;
+  border: 1px solid rgba(192, 57, 43, 0.3);
 }
 
 .btn:disabled {
-  background: rgba(255,255,255,0.1);
-  color: var(--tg-theme-hint-color, #aaa);
+  background: rgba(255,255,255,0.06);
+  color: var(--hint);
   cursor: not-allowed;
 }
 
 .badge-registered {
   display: inline-block;
   font-size: 11px;
-  background: rgba(100, 200, 100, 0.15);
-  color: #6dce6d;
-  border: 1px solid rgba(100, 200, 100, 0.3);
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--gold-light);
+  border: 1px solid var(--gold-border);
   border-radius: 6px;
   padding: 2px 8px;
   margin-bottom: 8px;
 }
 
-/* Рейтинг */
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tg-theme-hint-color, #aaa);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
+/* Прошедшие игры */
+.past-game-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--gold-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.2s;
 }
 
+.past-game-card:hover {
+  background: var(--bg-card2);
+}
+
+.past-game-date {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.past-game-arrow {
+  font-size: 20px;
+  color: var(--gold);
+}
+
+/* Экран результатов */
 .screen {
   padding: 16px;
 }
@@ -207,51 +269,28 @@ body {
 .back-btn {
   background: none;
   border: none;
-  color: var(--tg-theme-button-color, #c9831a);
+  color: var(--gold);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  padding: 0 0 12px 0;
+  padding: 0 0 14px 0;
   display: block;
 }
 
-.past-game-card {
-  background: var(--tg-theme-secondary-bg-color, #16213e);
-  border-radius: 14px;
-  padding: 14px 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: opacity 0.2s;
-}
-
-.past-game-card:hover { opacity: 0.8; }
-
-.past-game-date {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.past-game-arrow {
-  font-size: 18px;
-  color: var(--tg-theme-hint-color, #aaa);
-}
-
+/* Рейтинг — переключатель месяцев */
 .month-selector {
   display: flex;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .month-btn {
   flex: 1;
-  padding: 8px;
-  border: 1px solid rgba(255,255,255,0.15);
+  padding: 9px;
+  border: 1px solid var(--gold-border);
   border-radius: 10px;
   background: transparent;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -259,26 +298,29 @@ body {
 }
 
 .month-btn.active {
-  background: var(--tg-theme-button-color, #c9831a);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: linear-gradient(135deg, #c9a227, #a07d15);
+  color: #0a0a0a;
+  font-weight: 700;
   border-color: transparent;
 }
 
+/* Строка рейтинга */
 .rating-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--tg-theme-secondary-bg-color, #16213e);
-  border-radius: 14px;
-  padding: 12px 16px;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gold-border);
 }
 
 .rating-place {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   min-width: 32px;
   text-align: center;
+  color: var(--hint);
 }
 
 .rating-place.gold { color: #ffd700; }
@@ -289,29 +331,30 @@ body {
   flex: 1;
   font-size: 15px;
   font-weight: 500;
+  color: var(--text);
 }
 
 .rating-score {
   font-size: 15px;
   font-weight: 700;
-  color: var(--tg-theme-button-color, #c9831a);
+  color: var(--gold);
 }
 
 .finalist {
-  border-color: rgba(100, 220, 100, 0.3);
-  background: rgba(100, 220, 100, 0.06);
+  border-color: rgba(201, 162, 39, 0.4);
+  background: rgba(201, 162, 39, 0.06);
 }
 
 .non-finalist {
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .finalist-badge {
   display: inline-block;
   font-size: 10px;
-  background: rgba(100, 220, 100, 0.2);
-  color: #6dce6d;
-  border: 1px solid rgba(100, 220, 100, 0.4);
+  background: rgba(201, 162, 39, 0.15);
+  color: var(--gold-light);
+  border: 1px solid var(--gold-border);
   border-radius: 4px;
   padding: 1px 6px;
   margin-left: 6px;
@@ -320,18 +363,20 @@ body {
 
 .rating-divider {
   text-align: center;
-  font-size: 12px;
-  color: var(--tg-theme-hint-color, #aaa);
+  font-size: 11px;
+  color: var(--hint);
   padding: 8px 0;
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid var(--gold-border);
+  border-bottom: 1px solid var(--gold-border);
   margin: 4px 0;
+  letter-spacing: 1px;
 }
 
+/* Пустой экран */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: var(--tg-theme-hint-color, #aaa);
+  color: var(--hint);
 }
 
 .empty-state .icon {
@@ -349,20 +394,18 @@ body {
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: #333;
-  color: #fff;
+  background: #1a1a1a;
+  color: var(--text);
   padding: 12px 20px;
   border-radius: 12px;
   font-size: 14px;
+  border: 1px solid var(--gold-border);
   transition: transform 0.3s;
   z-index: 100;
   max-width: 320px;
   text-align: center;
 }
 
-.toast.show {
-  transform: translateX(-50%) translateY(0);
-}
-
-.toast.success { background: #2d7a2d; }
-.toast.error { background: #7a2d2d; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: rgba(100, 200, 100, 0.4); background: #0d1f0d; }
+.toast.error { border-color: rgba(192, 57, 43, 0.4); background: #1f0d0d; }
