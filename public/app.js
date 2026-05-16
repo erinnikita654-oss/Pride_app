@@ -145,13 +145,24 @@ async function cancelRegistration(gameId) {
   showToast('Запись отменена', '');
 }
 
+let currentMonth = 'may';
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.month-btn');
+  if (!btn) return;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMonth = btn.dataset.month;
+  loadRating();
+});
+
 // Загрузка рейтинга
 async function loadRating() {
   const container = document.getElementById('rating-list');
   container.innerHTML = '<div class="loading">Загрузка...</div>';
 
   try {
-    const res = await fetch('/api/rating');
+    const res = await fetch(`/api/rating?month=${currentMonth}`);
     const players = await res.json();
 
     if (!players.length) {

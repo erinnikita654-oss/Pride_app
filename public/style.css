@@ -187,6 +187,31 @@ body {
 }
 
 /* Рейтинг */
+.month-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.month-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--tg-theme-hint-color, #aaa);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.month-btn.active {
+  background: var(--tg-theme-button-color, #c9831a);
+  color: var(--tg-theme-button-text-color, #fff);
+  border-color: transparent;
+}
+
 .rating-item {
   display: flex;
   align-items: center;

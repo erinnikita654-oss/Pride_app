@@ -106,12 +106,19 @@ app.delete('/api/games/:id/register', async (req, res) => {
   res.json({ success: true });
 });
 
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=675526994';
+const SHEETS = {
+  may:   '675526994',
+  april: '321291646',
+};
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=';
 
 // Получить рейтинг из Google Sheets
 app.get('/api/rating', async (req, res) => {
+  const month = req.query.month || 'may';
+  const gid = SHEETS[month] || SHEETS.may;
+
   try {
-    const response = await fetch(SHEET_CSV_URL);
+    const response = await fetch(SHEET_BASE + gid);
     if (!response.ok) throw new Error('Ошибка загрузки таблицы');
 
     const csv = await response.text();
@@ -120,8 +127,8 @@ app.get('/api/rating', async (req, res) => {
     const players = lines
       .map(line => {
         const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        const name = cols[3] || '';    // колонка D
-        const points = parseInt(cols[22]) || 0; // колонка W
+        const name = cols[3] || '';
+        const points = parseInt(cols[22]) || 0;
         return { first_name: name, rating: points };
       })
       .filter(p => p.first_name !== '' && p.rating > 0)
