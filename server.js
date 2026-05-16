@@ -355,7 +355,7 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
   }
 
   // Сортируем месяцы в хронологическом порядке
-  const order = ['march', 'april', 'may'];
+  const order = ['may', 'april', 'march'];
   months.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
 
   res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
