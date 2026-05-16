@@ -119,19 +119,14 @@ app.get('/api/rating', async (req, res) => {
   const gid = SHEETS[month] || SHEETS.may;
 
   try {
-    const response = await fetch(SHEET_BASE + gid);
-    if (!response.ok) throw new Error('Ошибка загрузки таблицы');
+    const lines = await fetchSheetLines(gid);
+    const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
-    const csv = await response.text();
-    const lines = csv.trim().split('\n');
-
-    const players = lines
-      .map(line => {
-        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-        const name = cols[3] || '';
-        const points = parseInt(cols[22]) || 0;
-        return { first_name: name, rating: points };
-      })
+    const players = lines.slice(2)
+      .map(cols => ({
+        first_name: cols[nameIdx] || '',
+        rating: parseInt(cols[totalIdx]) || 0,
+      }))
       .filter(p => p.first_name !== '' && p.rating > 0)
       .sort((a, b) => b.rating - a.rating)
       .map((p, i) => ({ ...p, place: i + 1 }));
@@ -143,7 +138,7 @@ app.get('/api/rating', async (req, res) => {
   }
 });
 
-// Вспомогательная функция — парсинг CSV листа
+// Парсинг CSV листа
 async function fetchSheetLines(gid) {
   const response = await fetch(SHEET_BASE + gid);
   if (!response.ok) throw new Error('Ошибка загрузки таблицы');
@@ -151,6 +146,17 @@ async function fetchSheetLines(gid) {
   return csv.trim().split('\n').map(line =>
     line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
   );
+}
+
+// Определить структуру листа: индексы name, total и дат
+function detectSheetStructure(lines) {
+  const header = lines[1] || [];
+  const totalIdx = header.findIndex(c => c === 'Итого');
+  const dateCols = [];
+  for (let i = 4; i < (totalIdx > 0 ? totalIdx : header.length); i++) {
+    if (header[i] && header[i].trim() !== '') dateCols.push({ label: header[i], idx: i });
+  }
+  return { nameIdx: 3, totalIdx: totalIdx > 0 ? totalIdx : 22, dateCols };
 }
 
 // Статистика конкретного игрока за месяц
@@ -162,14 +168,8 @@ app.get('/api/player-stats', async (req, res) => {
 
   try {
     const lines = await fetchSheetLines(gid);
+    const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
-
-    // Найти колонки дат (между 4 и 21 включительно)
-    const header = lines[1] || [];
-    const dateCols = [];
-    for (let i = 4; i < 22; i++) {
-      if (header[i] && header[i].trim() !== '') dateCols.push({ label: header[i], idx: i });
-    }
 
     const normalize = s => (s || '').trim().toLowerCase();
     const playerRow = dataRows.find(cols => normalize(cols[3]) === normalize(nickname));
@@ -210,22 +210,13 @@ app.get('/api/player-stats', async (req, res) => {
 app.get('/api/past-games', async (req, res) => {
   try {
     const lines = await fetchSheetLines(SHEETS.may);
+    const { dateCols } = detectSheetStructure(lines);
 
-    // Строка 2 (индекс 1) — заголовки с датами
-    const header = lines[1] || [];
+    const withData = dateCols.filter(({ idx }) =>
+      lines.slice(2).some(row => parseInt(row[idx]) > 0)
+    ).map(({ label, idx }) => ({ label, colIndex: idx }));
 
-    // Найти колонки с датами (между Игрок=3 и Итого=22)
-    const dateCols = [];
-    for (let i = 4; i < 22; i++) {
-      if (header[i] && header[i] !== '') {
-        // Проверить что есть хоть один игрок с данными в этой колонке
-        const hasData = lines.slice(2).some(row => parseInt(row[i]) > 0);
-        if (hasData) dateCols.push({ label: header[i], colIndex: i });
-      }
-    }
-
-    // Вернуть последние 3
-    res.json(dateCols.slice(-3).reverse());
+    res.json(withData.slice(-3).reverse());
   } catch (e) {
     console.error('Ошибка past-games:', e.message);
     res.status(500).json({ error: e.message });
@@ -281,22 +272,23 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
 
   try {
     const lines = await fetchSheetLines(SHEETS.may);
+    const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
     const normalize = s => (s || '').trim().toLowerCase();
-    const playerRow = dataRows.find(cols => normalize(cols[3]) === normalize(nickname));
+    const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
 
     if (playerRow) {
-      monthPoints = parseInt(playerRow[22]) || 0;
-      for (let i = 4; i < 22; i++) {
-        const pts = parseInt(playerRow[i]) || 0;
+      monthPoints = parseInt(playerRow[totalIdx]) || 0;
+      for (const { idx } of dateCols) {
+        const pts = parseInt(playerRow[idx]) || 0;
         if (pts > 0) { gamesPlayed++; if (pts > bestGame) bestGame = pts; }
       }
       foundInSheet = true;
     }
 
     const ranked = dataRows
-      .map(cols => ({ name: cols[3], pts: parseInt(cols[22]) || 0 }))
+      .map(cols => ({ name: cols[nameIdx], pts: parseInt(cols[totalIdx]) || 0 }))
       .filter(p => p.name && p.pts > 0)
       .sort((a, b) => b.pts - a.pts);
 
