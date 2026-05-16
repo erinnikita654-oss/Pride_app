@@ -16,7 +16,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     const target = tab.dataset.tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById('screen-results').classList.add('hidden');
+    hideAllScreens();
     tab.classList.add('active');
     document.getElementById(`tab-${target}`).classList.add('active');
     if (target === 'rating') loadRating();
