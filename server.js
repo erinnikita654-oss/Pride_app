@@ -119,13 +119,15 @@ app.get('/api/rating', async (req, res) => {
 
     const players = lines
       .map(line => {
-        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        // Поддержка разделителей , и ;
+        const sep = line.includes(';') ? ';' : ',';
+        const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
         const place = parseInt(cols[0]);
         const name = cols[1] || '';
         const points = parseInt(cols[2]) || 0;
         return { place, first_name: name, rating: points };
       })
-      .filter(p => p.name !== '' && !isNaN(p.place));
+      .filter(p => p.first_name !== '' && !isNaN(p.place) && p.place > 0);
 
     res.json(players);
   } catch (e) {
