@@ -21,6 +21,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById(`tab-${target}`).classList.add('active');
     if (target === 'rating') loadRating();
     if (target === 'legends') loadLegends();
+    if (target === 'players') loadAllPlayers();
   });
 });
 
@@ -426,6 +427,121 @@ document.getElementById('player-back-btn').addEventListener('click', () => {
 
 let clubNickname = null;
 
+// --- Все игроки ---
+
+let allPlayersList = [];
+
+document.getElementById('players-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = q ? allPlayersList.filter(p => p.name.toLowerCase().includes(q)) : allPlayersList;
+  renderPlayersList(filtered);
+});
+
+document.getElementById('player-overall-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'players'));
+  document.getElementById('tab-players').classList.add('active');
+});
+
+async function loadAllPlayers() {
+  const container = document.getElementById('players-list');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+  try {
+    const res = await fetch('/api/all-players');
+    allPlayersList = await res.json();
+    renderPlayersList(allPlayersList);
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
+function renderPlayersList(players) {
+  const container = document.getElementById('players-list');
+  if (!players.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">👤</div><p>Никого не найдено</p></div>`;
+    return;
+  }
+  container.innerHTML = players.map(p => {
+    const letter = (p.name || '?')[0].toUpperCase();
+    const monthsLabel = p.months === 1 ? '1 месяц' : p.months < 5 ? `${p.months} месяца` : `${p.months} месяцев`;
+    return `
+      <div class="player-card" data-nickname="${p.name}">
+        <div class="player-card-avatar">${letter}</div>
+        <div class="player-card-info">
+          <div class="player-card-name">${p.name}</div>
+          <div class="player-card-sub">Играет ${monthsLabel}</div>
+        </div>
+        <div class="player-card-pts">${p.totalPoints} очк.</div>
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.player-card').forEach(card => {
+    card.addEventListener('click', () => openPlayerOverall(card.dataset.nickname));
+  });
+}
+
+async function openPlayerOverall(nickname) {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-player-overall').classList.remove('hidden');
+
+  document.getElementById('overall-avatar').textContent = (nickname || '?')[0].toUpperCase();
+  document.getElementById('overall-nickname').textContent = nickname;
+
+  const container = document.getElementById('overall-content');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`);
+    const d = await res.json();
+
+    if (!d.months || !d.months.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>Нет данных</p></div>`;
+      return;
+    }
+
+    const winsWord = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
+    const bp = d.allBestPlace ? `${d.allBestPlace} место` : '—';
+
+    const overallHTML = `
+      <div class="overall-card">
+        <div class="overall-title">⚡ За всё время</div>
+        <div class="profile-stats">
+          <div class="stat-card"><div class="stat-value">${d.totalGames}</div><div class="stat-label">Игр</div></div>
+          <div class="stat-card"><div class="stat-value">${d.totalPoints}</div><div class="stat-label">Очков</div></div>
+          <div class="stat-card"><div class="stat-value">${d.allBestPoints}</div><div class="stat-label">Лучший рез.</div></div>
+          <div class="stat-card"><div class="stat-value">${bp}</div><div class="stat-label">Лучшее место</div></div>
+          <div class="stat-card wide">
+            <div class="stat-value">${d.totalWins} <span style="font-size:18px">${winsWord(d.totalWins)}</span></div>
+            <div class="stat-label">🏆 Первых мест</div>
+          </div>
+        </div>
+      </div>`;
+
+    const monthsHTML = d.months.map(m => {
+      const mbp = m.bestPlace ? `${m.bestPlace} место` : '—';
+      const winsTag = m.wins > 0 ? `<div class="month-result-wins">🏆 ${m.wins} ${winsWord(m.wins)}</div>` : '';
+      return `
+        <div class="month-result-card">
+          <div class="month-result-header">
+            <div class="month-result-title">${m.label}</div>
+            ${winsTag}
+          </div>
+          <div class="month-result-grid">
+            <div class="month-stat"><div class="month-stat-value">${m.gamesPlayed}</div><div class="month-stat-label">Игр</div></div>
+            <div class="month-stat"><div class="month-stat-value">${m.monthTotal}</div><div class="month-stat-label">Очков</div></div>
+            <div class="month-stat"><div class="month-stat-value">${m.bestPoints}</div><div class="month-stat-label">Лучший рез.</div></div>
+            <div class="month-stat"><div class="month-stat-value">${mbp}</div><div class="month-stat-label">Лучшее место</div></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = overallHTML + monthsHTML;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
 async function loadLegends() {
   const container = document.getElementById('legends-list');
   container.innerHTML = '<div class="loading">Загрузка...</div>';
@@ -588,7 +704,8 @@ async function openMyResults() {
 }
 
 function hideAllScreens() {
-  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player', 'screen-all-games', 'screen-my-results']
+  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
+   'screen-all-games', 'screen-my-results', 'screen-player-overall']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 

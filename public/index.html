@@ -19,6 +19,7 @@
         <button class="tab active" data-tab="games">Игры</button>
         <button class="tab" data-tab="rating">Рейтинг</button>
         <button class="tab" data-tab="legends">Легенды</button>
+        <button class="tab" data-tab="players">Игроки</button>
       </nav>
     </header>
 
@@ -66,6 +67,28 @@
         <button class="back-btn" id="my-results-back-btn">← Назад</button>
         <div class="section-title" style="margin-bottom:16px">Мои результаты</div>
         <div id="my-results-content">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
+      <!-- Вкладка: Игроки -->
+      <section id="tab-players" class="tab-content">
+        <div class="search-wrapper">
+          <input id="players-search" class="search-input" type="text" placeholder="🔍 Поиск по нику...">
+        </div>
+        <div id="players-list" class="list">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
+      <!-- Экран общей статистики игрока -->
+      <section id="screen-player-overall" class="screen hidden">
+        <button class="back-btn" id="player-overall-back-btn">← Назад</button>
+        <div class="profile-header" style="padding-top:0">
+          <div class="profile-avatar" id="overall-avatar"></div>
+          <div class="profile-nickname" id="overall-nickname"></div>
+        </div>
+        <div id="overall-content">
           <div class="loading">Загрузка...</div>
         </div>
       </section>

@@ -361,6 +361,87 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
   res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
 });
 
+// Все игроки — сводный список по всем месяцам
+app.get('/api/all-players', async (req, res) => {
+  try {
+    const playerMap = {};
+
+    for (const [key, gid] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(gid);
+      const { nameIdx, totalIdx } = detectSheetStructure(lines);
+
+      lines.slice(2).forEach(cols => {
+        const name = (cols[nameIdx] || '').trim();
+        const pts  = parseInt(cols[totalIdx]) || 0;
+        if (!name || pts === 0) return;
+        if (!playerMap[name]) playerMap[name] = { name, totalPoints: 0, months: 0 };
+        playerMap[name].totalPoints += pts;
+        playerMap[name].months++;
+      });
+    }
+
+    const players = Object.values(playerMap)
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+
+    res.json(players);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Общая статистика конкретного игрока по всем месяцам
+app.get('/api/player-overall', async (req, res) => {
+  const { nickname } = req.query;
+  if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
+
+  const monthNames = { march: 'Март', april: 'Апрель', may: 'Май' };
+  const order = ['may', 'april', 'march'];
+  const months = [];
+  let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
+
+  for (const [key, gid] of Object.entries(SHEETS)) {
+    try {
+      const lines = await fetchSheetLines(gid);
+      const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
+      const dataRows = lines.slice(2);
+
+      const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
+      if (!playerRow) continue;
+
+      const monthTotal = parseInt(playerRow[totalIdx]) || 0;
+      if (monthTotal === 0) continue;
+
+      let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
+
+      for (const { idx } of dateCols) {
+        const pts = parseInt(playerRow[idx]) || 0;
+        if (pts === 0) continue;
+
+        const scores = dataRows
+          .map(cols => parseInt(cols[idx]) || 0)
+          .filter(p => p > 0).sort((a, b) => b - a);
+
+        const place = scores.indexOf(pts) + 1;
+        gamesPlayed++;
+        if (pts > bestPoints) bestPoints = pts;
+        if (bestPlace === null || place < bestPlace) bestPlace = place;
+        if (place === 1) wins++;
+      }
+
+      totalGames  += gamesPlayed;
+      totalPoints += monthTotal;
+      if (bestPoints > allBestPoints) allBestPoints = bestPoints;
+      if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
+      totalWins += wins;
+
+      months.push({ key, label: monthNames[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
+    } catch (e) {}
+  }
+
+  months.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
+});
+
 // Легенды клуба — топ-10 по количеству первых мест за всё время
 app.get('/api/legends', async (req, res) => {
   try {
