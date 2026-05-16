@@ -11,26 +11,32 @@ if (!token) {
   process.exit(1);
 }
 
-const bot = new TelegramBot(token, { polling: true });
-
+console.log('APP_URL:', appUrl);
 console.log('Бот покерного клуба запущен...');
+
+const bot = new TelegramBot(token, { polling: true });
 
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from.first_name || 'Игрок';
 
-  await bot.sendMessage(chatId, `Добро пожаловать в покерный клуб, ${firstName}! 🃏\n\nОткрой приложение, чтобы записаться на игры и посмотреть рейтинг.`, {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: '🃏 Открыть клуб',
-            web_app: { url: appUrl }
-          }
-        ]
-      ]
+  try {
+    if (!appUrl) {
+      await bot.sendMessage(chatId, `Добро пожаловать в покерный клуб, ${firstName}! 🃏\n\n⚙️ Приложение ещё настраивается, попробуй позже.`);
+      return;
     }
-  });
+
+    await bot.sendMessage(chatId, `Добро пожаловать в покерный клуб, ${firstName}! 🃏\n\nОткрой приложение, чтобы записаться на игры и посмотреть рейтинг.`, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '🃏 Открыть клуб', web_app: { url: appUrl } }]
+        ]
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка /start:', error.message);
+    await bot.sendMessage(chatId, 'Произошла ошибка, попробуй ещё раз.').catch(() => {});
+  }
 });
 
 bot.onText(/\/help/, async (msg) => {
