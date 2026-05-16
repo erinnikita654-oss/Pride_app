@@ -551,10 +551,15 @@ async function openMyResults() {
 
     const monthsHTML = d.months.map(m => {
       const bp = m.bestPlace ? `${m.bestPlace} место` : '—';
-      const winsLabel = m.wins > 0 ? `🏆 ${m.wins} ${winsWord(m.wins)}` : '';
+      const winsTag = m.wins > 0
+        ? `<div class="month-result-wins">🏆 ${m.wins} ${winsWord(m.wins)}</div>`
+        : '';
       return `
         <div class="month-result-card">
-          <div class="month-result-title">${m.label} ${winsLabel}</div>
+          <div class="month-result-header">
+            <div class="month-result-title">${m.label}</div>
+            ${winsTag}
+          </div>
           <div class="month-result-grid">
             <div class="month-stat">
               <div class="month-stat-value">${m.gamesPlayed}</div>

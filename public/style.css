@@ -564,13 +564,13 @@ body {
 
 .profile-action-btns {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
+  padding: 0 16px;
 }
 
-.profile-edit-btn,
-.profile-results-btn {
+.profile-edit-btn {
   background: transparent;
   border: 1px solid var(--gold-border);
   border-radius: 8px;
@@ -582,38 +582,71 @@ body {
 }
 
 .profile-results-btn {
-  background: var(--gold-dim);
+  background: linear-gradient(135deg, #c9a227, #a07d15);
+  border: none;
+  border-radius: 10px;
+  color: #0a0a0a;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.profile-results-btn:hover {
+  opacity: 0.9;
 }
 
 .month-result-card {
   background: var(--bg-card);
   border: 1px solid var(--gold-border);
   border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.month-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
 .month-result-title {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--gold);
-  margin-bottom: 12px;
+}
+
+.month-result-wins {
+  background: rgba(201, 162, 39, 0.15);
+  border: 1px solid var(--gold-border);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold-light);
 }
 
 .month-result-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 12px;
 }
 
 .month-stat {
   text-align: center;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 10px 8px;
 }
 
 .month-stat-value {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--text);
+  margin-bottom: 4px;
 }
 
 .month-stat-label {
