@@ -20,6 +20,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.classList.add('active');
     document.getElementById(`tab-${target}`).classList.add('active');
     if (target === 'rating') loadRating();
+    if (target === 'legends') loadLegends();
   });
 });
 
@@ -424,6 +425,38 @@ document.getElementById('player-back-btn').addEventListener('click', () => {
 // --- Авторизация по нику ---
 
 let clubNickname = null;
+
+async function loadLegends() {
+  const container = document.getElementById('legends-list');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch('/api/legends');
+    const legends = await res.json();
+
+    if (!legends.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">👑</div><p>Нет данных</p></div>`;
+      return;
+    }
+
+    const placeClass = p => p === 1 ? 'gold' : p === 2 ? 'silver' : p === 3 ? 'bronze' : '';
+    const placeIcon  = p => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : `${p}`;
+    const itemClass  = p => p === 1 ? 'top1' : p === 2 ? 'top2' : p === 3 ? 'top3' : '';
+    const winsWord   = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
+
+    container.innerHTML = legends.map(p => `
+      <div class="legend-item ${itemClass(p.place)}">
+        <div class="legend-place ${placeClass(p.place)}">${placeIcon(p.place)}</div>
+        <div class="legend-name">${p.name}</div>
+        <div class="legend-wins">
+          <div class="legend-wins-count">${p.count}</div>
+          <div class="legend-wins-label">${winsWord(p.count)}</div>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
 
 async function initAuth() {
   if (!telegramId) {

@@ -448,6 +448,88 @@ body {
   font-size: 15px;
 }
 
+/* Легенды */
+.legends-header {
+  text-align: center;
+  padding: 20px 0 16px;
+}
+
+.legends-crown {
+  font-size: 52px;
+  margin-bottom: 8px;
+}
+
+.legends-subtitle {
+  font-size: 13px;
+  color: var(--hint);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--gold-border);
+}
+
+.legend-item.top1 {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(255, 215, 0, 0.06);
+}
+
+.legend-item.top2 {
+  border-color: rgba(192, 192, 192, 0.4);
+  background: rgba(192, 192, 192, 0.04);
+}
+
+.legend-item.top3 {
+  border-color: rgba(205, 127, 50, 0.4);
+  background: rgba(205, 127, 50, 0.04);
+}
+
+.legend-place {
+  font-size: 20px;
+  min-width: 36px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--hint);
+}
+
+.legend-place.gold   { color: #ffd700; }
+.legend-place.silver { color: #c0c0c0; }
+.legend-place.bronze { color: #cd7f32; }
+
+.legend-name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.legend-wins {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.legend-wins-count {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f0c040, #c9a227);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.legend-wins-label {
+  font-size: 11px;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 /* Экран профиля */
 .profile-header {
   display: flex;

@@ -301,6 +301,46 @@ app.get('/api/all-past-games', async (req, res) => {
   }
 });
 
+// Легенды клуба — топ-10 по количеству первых мест за всё время
+app.get('/api/legends', async (req, res) => {
+  try {
+    const wins = {};
+
+    for (const gid of Object.values(SHEETS)) {
+      const lines = await fetchSheetLines(gid);
+      const { nameIdx, dateCols } = detectSheetStructure(lines);
+      const dataRows = lines.slice(2);
+
+      for (const { idx } of dateCols) {
+        // Найти максимальный результат в этой игре
+        const scores = dataRows.map(cols => ({
+          name: (cols[nameIdx] || '').trim(),
+          pts: parseInt(cols[idx]) || 0,
+        })).filter(p => p.name && p.pts > 0);
+
+        if (!scores.length) continue;
+
+        const maxPts = Math.max(...scores.map(p => p.pts));
+        // Все кто набрал максимум — получают победу (учитываем ничью)
+        scores.filter(p => p.pts === maxPts).forEach(p => {
+          wins[p.name] = (wins[p.name] || 0) + 1;
+        });
+      }
+    }
+
+    const legends = Object.entries(wins)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+      .map((p, i) => ({ ...p, place: i + 1 }));
+
+    res.json(legends);
+  } catch (e) {
+    console.error('Ошибка legends:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });

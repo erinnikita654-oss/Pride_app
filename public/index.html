@@ -18,6 +18,7 @@
       <nav class="tabs">
         <button class="tab active" data-tab="games">Игры</button>
         <button class="tab" data-tab="rating">Рейтинг</button>
+        <button class="tab" data-tab="legends">Легенды</button>
       </nav>
     </header>
 
@@ -45,6 +46,17 @@
           <button class="ag-month-btn" data-month="march">Март</button>
         </div>
         <div id="all-games-list" class="list">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
+      <!-- Вкладка: Легенды -->
+      <section id="tab-legends" class="tab-content">
+        <div class="legends-header">
+          <div class="legends-crown">👑</div>
+          <div class="legends-subtitle">Топ-10 по количеству побед за всё время</div>
+        </div>
+        <div id="legends-list" class="list">
           <div class="loading">Загрузка...</div>
         </div>
       </section>
