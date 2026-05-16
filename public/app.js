@@ -261,5 +261,57 @@ async function loadRating() {
   }
 }
 
-loadGames();
-loadPastGames();
+// --- Авторизация по нику ---
+
+let clubNickname = null;
+
+async function initAuth() {
+  if (!telegramId) {
+    loadGames();
+    loadPastGames();
+    return;
+  }
+
+  const res = await fetch(`/api/profile/${telegramId}`);
+  const profile = await res.json();
+
+  if (profile && profile.first_name) {
+    clubNickname = profile.first_name;
+    loadGames();
+    loadPastGames();
+  } else {
+    document.getElementById('screen-nickname').classList.remove('hidden');
+  }
+}
+
+document.getElementById('nickname-btn').addEventListener('click', async () => {
+  const input = document.getElementById('nickname-input');
+  const nickname = input.value.trim();
+  if (nickname.length < 2) {
+    input.style.borderColor = '#c0392b';
+    return;
+  }
+
+  const btn = document.getElementById('nickname-btn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняем...';
+
+  const res = await fetch('/api/profile/set-nickname', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ telegramId, nickname, username, firstName })
+  });
+
+  if (res.ok) {
+    clubNickname = nickname;
+    document.getElementById('screen-nickname').classList.add('hidden');
+    loadGames();
+    loadPastGames();
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Войти в клуб';
+    showToast('Ошибка, попробуй ещё раз', 'error');
+  }
+});
+
+initAuth();

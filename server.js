@@ -202,6 +202,38 @@ app.get('/api/game-results', async (req, res) => {
   }
 });
 
+// Получить профиль пользователя
+app.get('/api/profile/:telegramId', async (req, res) => {
+  const { data: user } = await supabase
+    .from('users')
+    .select('first_name, username')
+    .eq('telegram_id', req.params.telegramId)
+    .single();
+  res.json(user || null);
+});
+
+// Сохранить ник
+app.post('/api/profile/set-nickname', async (req, res) => {
+  const { telegramId, nickname, username, firstName } = req.body;
+  if (!nickname || nickname.trim().length < 2) {
+    return res.status(400).json({ error: 'Ник слишком короткий' });
+  }
+
+  const { data: existing } = await supabase
+    .from('users')
+    .select('id')
+    .eq('telegram_id', telegramId)
+    .single();
+
+  if (existing) {
+    await supabase.from('users').update({ first_name: nickname.trim() }).eq('telegram_id', telegramId);
+  } else {
+    await supabase.from('users').insert({ telegram_id: telegramId, username, first_name: nickname.trim(), rating: 0 });
+  }
+
+  res.json({ success: true });
+});
+
 // Получить мои записи
 app.get('/api/my-registrations/:telegramId', async (req, res) => {
   const { data: user } = await supabase
