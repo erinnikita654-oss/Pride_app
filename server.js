@@ -106,16 +106,32 @@ app.delete('/api/games/:id/register', async (req, res) => {
   res.json({ success: true });
 });
 
-// Получить рейтинг
-app.get('/api/rating', async (req, res) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('first_name, username, rating')
-    .order('rating', { ascending: false })
-    .limit(50);
+// Получить рейтинг из Google Sheets
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=675526994';
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+app.get('/api/rating', async (req, res) => {
+  try {
+    const response = await fetch(SHEET_CSV_URL);
+    if (!response.ok) throw new Error('Ошибка загрузки таблицы');
+
+    const csv = await response.text();
+    const lines = csv.trim().split('\n').slice(1); // пропускаем заголовок
+
+    const players = lines
+      .map(line => {
+        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const place = parseInt(cols[0]);
+        const name = cols[1] || '';
+        const points = parseInt(cols[2]) || 0;
+        return { place, first_name: name, rating: points };
+      })
+      .filter(p => p.name !== '' && !isNaN(p.place));
+
+    res.json(players);
+  } catch (e) {
+    console.error('Ошибка рейтинга:', e.message);
+    res.status(500).json({ error: 'Не удалось загрузить рейтинг' });
+  }
 });
 
 // Получить мои записи

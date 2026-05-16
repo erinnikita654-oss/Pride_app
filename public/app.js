@@ -159,13 +159,11 @@ async function loadRating() {
       return;
     }
 
-    const placeIcons = ['gold', 'silver', 'bronze'];
-    const medals = ['🥇', '🥈', '🥉'];
-
-    container.innerHTML = players.map((p, i) => {
-      const placeClass = placeIcons[i] || '';
-      const place = medals[i] || `${i + 1}`;
-      const name = p.first_name || p.username || 'Игрок';
+    container.innerHTML = players.map((p) => {
+      const placeNum = p.place;
+      const placeClass = placeNum === 1 ? 'gold' : placeNum === 2 ? 'silver' : placeNum === 3 ? 'bronze' : '';
+      const place = placeNum === 1 ? '🥇' : placeNum === 2 ? '🥈' : placeNum === 3 ? '🥉' : `${placeNum}`;
+      const name = p.first_name || 'Игрок';
       return `
         <div class="rating-item">
           <div class="rating-place ${placeClass}">${place}</div>
