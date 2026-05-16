@@ -247,6 +247,24 @@ body {
 }
 
 /* Прошедшие игры */
+.btn-all-games {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-all-games:hover {
+  background: var(--gold-dim);
+}
+
 .past-game-card {
   background: var(--bg-card);
   border-radius: 14px;

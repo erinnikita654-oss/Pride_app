@@ -283,6 +283,24 @@ app.get('/api/past-games', async (req, res) => {
   }
 });
 
+// Все прошедшие игры за выбранный месяц
+app.get('/api/all-past-games', async (req, res) => {
+  const gid = SHEETS[req.query.month] || SHEETS.may;
+  try {
+    const lines = await fetchSheetLines(gid);
+    const { dateCols } = detectSheetStructure(lines);
+
+    const withData = dateCols
+      .filter(({ idx }) => lines.slice(2).some(row => parseInt(row[idx]) > 0))
+      .map(({ label, idx }) => ({ label, colIndex: idx }))
+      .reverse();
+
+    res.json(withData);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });

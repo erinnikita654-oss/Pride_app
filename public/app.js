@@ -23,10 +23,69 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
+// --- Все прошедшие игры ---
+
+let allGamesMonth = 'may';
+
+document.getElementById('btn-all-games').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-all-games').classList.remove('hidden');
+  loadAllGames();
+});
+
+document.getElementById('all-games-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === 'games')
+  );
+  document.getElementById('tab-games').classList.add('active');
+});
+
+document.querySelectorAll('.ag-month-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ag-month-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    allGamesMonth = btn.dataset.month;
+    loadAllGames();
+  });
+});
+
+async function loadAllGames() {
+  const container = document.getElementById('all-games-list');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch(`/api/all-past-games?month=${allGamesMonth}`);
+    const games = await res.json();
+
+    if (!games.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Нет данных</p></div>`;
+      return;
+    }
+
+    container.innerHTML = games.map(g => `
+      <div class="past-game-card" data-col="${g.colIndex}" data-label="${g.label}">
+        <div class="past-game-date">🗓 ${g.label}</div>
+        <div class="past-game-arrow">›</div>
+      </div>`).join('');
+
+    container.querySelectorAll('.past-game-card').forEach(card => {
+      card.addEventListener('click', () => {
+        openGameResults(card.dataset.col, card.dataset.label, 'all-games');
+      });
+    });
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
 document.getElementById('back-btn').addEventListener('click', () => {
   hideAllScreens();
   if (gameResultsFrom === 'player') {
     document.getElementById('screen-player').classList.remove('hidden');
+  } else if (gameResultsFrom === 'all-games') {
+    document.getElementById('screen-all-games').classList.remove('hidden');
   } else {
     document.querySelectorAll('.tab').forEach(t =>
       t.classList.toggle('active', t.dataset.tab === 'games')
@@ -400,7 +459,7 @@ document.getElementById('profile-edit-btn').addEventListener('click', () => {
 });
 
 function hideAllScreens() {
-  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player']
+  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player', 'screen-all-games']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
