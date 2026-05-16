@@ -314,6 +314,29 @@ body {
   transition: all 0.2s;
 }
 
+.search-wrapper {
+  margin-bottom: 12px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--gold);
+}
+
+.search-input::placeholder {
+  color: var(--hint);
+}
+
 .month-btn.active {
   background: linear-gradient(135deg, #c9a227, #a07d15);
   color: #0a0a0a;

@@ -25,10 +25,14 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 document.getElementById('back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.getElementById('tab-games').classList.add('active');
-  document.querySelectorAll('.tab').forEach(t =>
-    t.classList.toggle('active', t.dataset.tab === 'games')
-  );
+  if (gameResultsFrom === 'player') {
+    document.getElementById('screen-player').classList.remove('hidden');
+  } else {
+    document.querySelectorAll('.tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.tab === 'games')
+    );
+    document.getElementById('tab-games').classList.add('active');
+  }
 });
 
 // --- Утилиты ---
@@ -177,8 +181,12 @@ async function loadPastGames() {
   }
 }
 
-async function openGameResults(colIndex, label) {
-  document.getElementById('tab-games').classList.remove('active');
+let gameResultsFrom = 'games';
+
+async function openGameResults(colIndex, label, from = 'games') {
+  gameResultsFrom = from;
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   const screen = document.getElementById('screen-results');
   screen.classList.remove('hidden');
   document.getElementById('results-title').textContent = `Результаты — ${label}`;
@@ -212,6 +220,7 @@ async function openGameResults(colIndex, label) {
 // --- Рейтинг ---
 
 let currentMonth = 'may';
+let allPlayers = [];
 
 document.addEventListener('click', e => {
   const btn = e.target.closest('.month-btn');
@@ -219,7 +228,14 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   currentMonth = btn.dataset.month;
+  document.getElementById('rating-search').value = '';
   loadRating();
+});
+
+document.getElementById('rating-search').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  const filtered = q ? allPlayers.filter(p => p.first_name.toLowerCase().includes(q)) : allPlayers;
+  renderRating(filtered);
 });
 
 async function loadRating() {
@@ -228,44 +244,49 @@ async function loadRating() {
 
   try {
     const res = await fetch(`/api/rating?month=${currentMonth}`);
-    const players = await res.json();
-
-    if (!players.length) {
-      container.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>Рейтинг пуст</p></div>`;
-      return;
-    }
-
-    const FINAL_SPOTS = 27;
-    let addedDivider = false;
-
-    container.innerHTML = players.map(p => {
-      const isFinalist = p.place <= FINAL_SPOTS;
-      const placeClass = p.place === 1 ? 'gold' : p.place === 2 ? 'silver' : p.place === 3 ? 'bronze' : '';
-      const place = p.place === 1 ? '🥇' : p.place === 2 ? '🥈' : p.place === 3 ? '🥉' : `${p.place}`;
-
-      let divider = '';
-      if (!isFinalist && !addedDivider) {
-        addedDivider = true;
-        divider = `<div class="rating-divider">— вне финала —</div>`;
-      }
-
-      return `${divider}
-        <div class="rating-item ${isFinalist ? 'finalist' : 'non-finalist'}" style="cursor:pointer" data-nickname="${p.first_name}">
-          <div class="rating-place ${placeClass}">${place}</div>
-          <div class="rating-name">
-            ${p.first_name}
-            ${isFinalist ? '<span class="finalist-badge">финал</span>' : ''}
-          </div>
-          <div class="rating-score">${p.rating} очк.</div>
-        </div>`;
-    }).join('');
-
-    container.querySelectorAll('.rating-item[data-nickname]').forEach(el => {
-      el.addEventListener('click', () => openPlayerStats(el.dataset.nickname, currentMonth));
-    });
+    allPlayers = await res.json();
+    renderRating(allPlayers);
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
   }
+}
+
+function renderRating(players) {
+  const container = document.getElementById('rating-list');
+
+  if (!players.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">🏆</div><p>Никого не найдено</p></div>`;
+    return;
+  }
+
+  const FINAL_SPOTS = 27;
+  let addedDivider = false;
+
+  container.innerHTML = players.map(p => {
+    const isFinalist = p.place <= FINAL_SPOTS;
+    const placeClass = p.place === 1 ? 'gold' : p.place === 2 ? 'silver' : p.place === 3 ? 'bronze' : '';
+    const place = p.place === 1 ? '🥇' : p.place === 2 ? '🥈' : p.place === 3 ? '🥉' : `${p.place}`;
+
+    let divider = '';
+    if (!isFinalist && !addedDivider) {
+      addedDivider = true;
+      divider = `<div class="rating-divider">— вне финала —</div>`;
+    }
+
+    return `${divider}
+      <div class="rating-item ${isFinalist ? 'finalist' : 'non-finalist'}" style="cursor:pointer" data-nickname="${p.first_name}">
+        <div class="rating-place ${placeClass}">${place}</div>
+        <div class="rating-name">
+          ${p.first_name}
+          ${isFinalist ? '<span class="finalist-badge">финал</span>' : ''}
+        </div>
+        <div class="rating-score">${p.rating} очк.</div>
+      </div>`;
+  }).join('');
+
+  container.querySelectorAll('.rating-item[data-nickname]').forEach(el => {
+    el.addEventListener('click', () => openPlayerStats(el.dataset.nickname, currentMonth));
+  });
 }
 
 async function openPlayerStats(nickname, month) {
@@ -313,14 +334,23 @@ async function openPlayerStats(nickname, month) {
       <div class="section-title" style="margin-bottom:10px">Результаты по играм</div>
       <div class="list">
         ${s.games.map(g => `
-          <div class="past-game-card" style="cursor:default">
-            <div class="past-game-date">🗓 ${g.label}</div>
+          <div class="past-game-card" data-col="${g.idx}" data-label="${g.label}">
+            <div>
+              <div class="past-game-date">🗓 ${g.label}</div>
+              <div style="font-size:12px;color:var(--hint);margin-top:2px">${g.place} место из ${g.total}</div>
+            </div>
             <div style="text-align:right">
               <div style="font-weight:700;color:var(--gold)">${g.pts} очк.</div>
-              <div style="font-size:12px;color:var(--hint)">${g.place} из ${g.total}</div>
+              <div style="font-size:12px;color:var(--hint)">Результаты ›</div>
             </div>
           </div>`).join('')}
       </div>`;
+
+    document.getElementById('player-games').querySelectorAll('.past-game-card').forEach(card => {
+      card.addEventListener('click', () => {
+        openGameResults(card.dataset.col, card.dataset.label, 'player');
+      });
+    });
   } catch (e) {
     document.getElementById('player-stats').innerHTML = `<div class="empty-state"><p>Ошибка загрузки</p></div>`;
   }

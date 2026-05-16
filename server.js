@@ -257,7 +257,7 @@ app.get('/api/player-stats', async (req, res) => {
       totalPoints += pts;
       if (pts > bestPoints) bestPoints = pts;
       if (bestPlace === null || place < bestPlace) bestPlace = place;
-      games.push({ label, pts, place, total: dayParticipants.length });
+      games.push({ label, idx, pts, place, total: dayParticipants.length });
     }
 
     res.json({ found: true, gamesPlayed, totalPoints, bestPoints, bestPlace, games });
