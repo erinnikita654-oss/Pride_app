@@ -319,7 +319,8 @@ body {
   margin-bottom: 14px;
 }
 
-.month-btn {
+.month-btn,
+.ag-month-btn {
   flex: 1;
   padding: 9px;
   border: 1px solid var(--gold-border);
@@ -355,7 +356,8 @@ body {
   color: var(--hint);
 }
 
-.month-btn.active {
+.month-btn.active,
+.ag-month-btn.active {
   background: linear-gradient(135deg, #c9a227, #a07d15);
   color: #0a0a0a;
   font-weight: 700;
