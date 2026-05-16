@@ -398,7 +398,8 @@ async function openProfile() {
     });
 
     const rankText = s.rank ? `#${s.rank}` : '—';
-    const rankLabel = 'Рейтинг в Мае';
+    const monthNames = { may: 'в Мае', april: 'в Апреле', march: 'в Марте' };
+    const rankLabel = `Рейтинг ${monthNames[currentMonth] || 'за месяц'}`;
 
     const verifiedBadge = s.foundInSheet
       ? `<div class="verified-badge">✓ Участник клуба</div>`
@@ -417,7 +418,7 @@ async function openProfile() {
       </div>
       <div class="stat-card">
         <div class="stat-value">${s.monthPoints}</div>
-        <div class="stat-label">Очков за май</div>
+        <div class="stat-label">Очков за Май</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">${s.gamesPlayed}</div>
