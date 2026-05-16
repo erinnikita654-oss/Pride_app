@@ -331,7 +331,7 @@ app.get('/api/legends', async (req, res) => {
     const legends = Object.entries(wins)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10)
+      .slice(0, 15)
       .map((p, i) => ({ ...p, place: i + 1 }));
 
     res.json(legends);
