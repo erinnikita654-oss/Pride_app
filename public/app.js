@@ -284,6 +284,18 @@ async function initAuth() {
   }
 }
 
+document.getElementById('nickname-cancel').addEventListener('click', () => {
+  if (clubNickname) {
+    document.getElementById('screen-nickname').classList.add('hidden');
+  }
+});
+
+document.getElementById('profile-btn').addEventListener('click', () => {
+  const input = document.getElementById('nickname-input');
+  input.value = clubNickname || '';
+  document.getElementById('screen-nickname').classList.remove('hidden');
+});
+
 document.getElementById('nickname-btn').addEventListener('click', async () => {
   const input = document.getElementById('nickname-input');
   const nickname = input.value.trim();
