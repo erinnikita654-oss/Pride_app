@@ -331,7 +331,7 @@ async function openProfile() {
     });
 
     const rankText = s.rank ? `#${s.rank}` : '—';
-    const rankLabel = s.rank && s.rank <= 27 ? '🏆 Финалист' : 'Место в мае';
+    const rankLabel = 'Рейтинг в Мае';
 
     const verifiedBadge = s.foundInSheet
       ? `<div class="verified-badge">✓ Участник клуба</div>`
