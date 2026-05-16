@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Покерный клуб</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>🃏 Покерный клуб</h1>
+      <nav class="tabs">
+        <button class="tab active" data-tab="games">Игры</button>
+        <button class="tab" data-tab="rating">Рейтинг</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Вкладка: Игры -->
+      <section id="tab-games" class="tab-content active">
+        <div id="games-list" class="list">
+          <div class="loading">Загрузка игр...</div>
+        </div>
+      </section>
+
+      <!-- Вкладка: Рейтинг -->
+      <section id="tab-rating" class="tab-content">
+        <div id="rating-list" class="list">
+          <div class="loading">Загрузка рейтинга...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
