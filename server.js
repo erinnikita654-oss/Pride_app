@@ -202,7 +202,7 @@ app.get('/api/game-results', async (req, res) => {
   }
 });
 
-// Получить профиль пользователя
+// Получить базовый профиль
 app.get('/api/profile/:telegramId', async (req, res) => {
   const { data: user } = await supabase
     .from('users')
@@ -210,6 +210,52 @@ app.get('/api/profile/:telegramId', async (req, res) => {
     .eq('telegram_id', req.params.telegramId)
     .single();
   res.json(user || null);
+});
+
+// Получить статистику профиля
+app.get('/api/profile-stats/:telegramId', async (req, res) => {
+  const { data: user } = await supabase
+    .from('users')
+    .select('*')
+    .eq('telegram_id', req.params.telegramId)
+    .single();
+
+  if (!user) return res.status(404).json({ error: 'Не найден' });
+
+  const nickname = user.first_name || '';
+  let monthPoints = 0, gamesPlayed = 0, bestGame = 0, rank = null;
+
+  try {
+    const lines = await fetchSheetLines(SHEETS.may);
+    const dataRows = lines.slice(2);
+
+    const playerRow = dataRows.find(cols => cols[3] === nickname);
+
+    if (playerRow) {
+      monthPoints = parseInt(playerRow[22]) || 0;
+      for (let i = 4; i < 22; i++) {
+        const pts = parseInt(playerRow[i]) || 0;
+        if (pts > 0) { gamesPlayed++; if (pts > bestGame) bestGame = pts; }
+      }
+    }
+
+    const ranked = dataRows
+      .map(cols => ({ name: cols[3], pts: parseInt(cols[22]) || 0 }))
+      .filter(p => p.name && p.pts > 0)
+      .sort((a, b) => b.pts - a.pts);
+
+    const idx = ranked.findIndex(p => p.name === nickname);
+    if (idx !== -1) rank = idx + 1;
+  } catch (e) {}
+
+  res.json({
+    nickname,
+    monthPoints,
+    gamesPlayed,
+    bestGame,
+    rank,
+    memberSince: user.created_at,
+  });
 });
 
 // Сохранить ник

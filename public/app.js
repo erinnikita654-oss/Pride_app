@@ -24,8 +24,11 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 document.getElementById('back-btn').addEventListener('click', () => {
-  document.getElementById('screen-results').classList.add('hidden');
+  hideAllScreens();
   document.getElementById('tab-games').classList.add('active');
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === 'games')
+  );
 });
 
 // --- Утилиты ---
@@ -285,16 +288,76 @@ async function initAuth() {
 }
 
 document.getElementById('nickname-cancel').addEventListener('click', () => {
-  if (clubNickname) {
-    document.getElementById('screen-nickname').classList.add('hidden');
-  }
+  if (clubNickname) document.getElementById('screen-nickname').classList.add('hidden');
 });
 
 document.getElementById('profile-btn').addEventListener('click', () => {
-  const input = document.getElementById('nickname-input');
-  input.value = clubNickname || '';
-  document.getElementById('screen-nickname').classList.remove('hidden');
+  openProfile();
 });
+
+document.getElementById('profile-edit-btn').addEventListener('click', () => {
+  document.getElementById('screen-profile').classList.add('hidden');
+  document.getElementById('screen-nickname').classList.remove('hidden');
+  document.getElementById('nickname-input').value = clubNickname || '';
+});
+
+function hideAllScreens() {
+  document.getElementById('screen-profile').classList.add('hidden');
+  document.getElementById('screen-results').classList.add('hidden');
+  document.getElementById('screen-nickname').classList.add('hidden');
+}
+
+async function openProfile() {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-profile').classList.remove('hidden');
+
+  // Аватар — первая буква ника
+  const letter = (clubNickname || '?')[0].toUpperCase();
+  document.getElementById('profile-avatar').textContent = letter;
+  document.getElementById('profile-nickname').textContent = clubNickname || 'Гость';
+
+  if (!telegramId) return;
+
+  const statsEl = document.getElementById('profile-stats');
+  statsEl.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch(`/api/profile-stats/${telegramId}`);
+    const s = await res.json();
+
+    const memberDate = new Date(s.memberSince).toLocaleDateString('ru-RU', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+
+    const rankText = s.rank ? `#${s.rank}` : '—';
+    const rankLabel = s.rank && s.rank <= 27 ? '🏆 Финалист' : 'Место в мае';
+
+    statsEl.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-value">${rankText}</div>
+        <div class="stat-label">${rankLabel}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${s.monthPoints}</div>
+        <div class="stat-label">Очков за май</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${s.gamesPlayed}</div>
+        <div class="stat-label">Игр сыграно</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${s.bestGame || '—'}</div>
+        <div class="stat-label">Лучший результат</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-value" style="font-size:16px">${memberDate}</div>
+        <div class="stat-label">В клубе с</div>
+      </div>`;
+  } catch (e) {
+    statsEl.innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
+  }
+}
 
 document.getElementById('nickname-btn').addEventListener('click', async () => {
   const input = document.getElementById('nickname-input');
