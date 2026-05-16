@@ -684,10 +684,7 @@ document.getElementById('nickname-btn').addEventListener('click', async () => {
   });
 
   if (res.ok) {
-    clubNickname = nickname;
-    document.getElementById('screen-nickname').classList.add('hidden');
-    loadGames();
-    loadPastGames();
+    window.location.reload();
   } else {
     btn.disabled = false;
     btn.textContent = 'Войти в клуб';
