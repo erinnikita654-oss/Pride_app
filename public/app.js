@@ -250,7 +250,7 @@ async function loadRating() {
       }
 
       return `${divider}
-        <div class="rating-item ${isFinalist ? 'finalist' : 'non-finalist'}">
+        <div class="rating-item ${isFinalist ? 'finalist' : 'non-finalist'}" style="cursor:pointer" data-nickname="${p.first_name}">
           <div class="rating-place ${placeClass}">${place}</div>
           <div class="rating-name">
             ${p.first_name}
@@ -259,10 +259,78 @@ async function loadRating() {
           <div class="rating-score">${p.rating} очк.</div>
         </div>`;
     }).join('');
+
+    container.querySelectorAll('.rating-item[data-nickname]').forEach(el => {
+      el.addEventListener('click', () => openPlayerStats(el.dataset.nickname, currentMonth));
+    });
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
   }
 }
+
+async function openPlayerStats(nickname, month) {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const screen = document.getElementById('screen-player');
+  screen.classList.remove('hidden');
+
+  const letter = (nickname || '?')[0].toUpperCase();
+  document.getElementById('player-avatar').textContent = letter;
+  document.getElementById('player-nickname').textContent = nickname;
+  document.getElementById('player-stats').innerHTML = '<div class="loading">Загрузка...</div>';
+  document.getElementById('player-games').innerHTML = '';
+
+  try {
+    const res = await fetch(`/api/player-stats?nickname=${encodeURIComponent(nickname)}&month=${month}`);
+    const s = await res.json();
+
+    if (!s.found) {
+      document.getElementById('player-stats').innerHTML = `<div class="stat-card wide"><div class="stat-label">Нет данных за этот месяц</div></div>`;
+      return;
+    }
+
+    const bestPlaceText = s.bestPlace ? `${s.bestPlace} место` : '—';
+
+    document.getElementById('player-stats').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-value">${s.gamesPlayed}</div>
+        <div class="stat-label">Игр сыграно</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${s.totalPoints}</div>
+        <div class="stat-label">Очков за месяц</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${s.bestPoints}</div>
+        <div class="stat-label">Лучший результат</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${bestPlaceText}</div>
+        <div class="stat-label">Лучшее место</div>
+      </div>`;
+
+    document.getElementById('player-games').innerHTML = `
+      <div class="section-title" style="margin-bottom:10px">Результаты по играм</div>
+      <div class="list">
+        ${s.games.map(g => `
+          <div class="past-game-card" style="cursor:default">
+            <div class="past-game-date">🗓 ${g.label}</div>
+            <div style="text-align:right">
+              <div style="font-weight:700;color:var(--gold)">${g.pts} очк.</div>
+              <div style="font-size:12px;color:var(--hint)">${g.place} из ${g.total}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } catch (e) {
+    document.getElementById('player-stats').innerHTML = `<div class="empty-state"><p>Ошибка загрузки</p></div>`;
+  }
+}
+
+document.getElementById('player-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'rating'));
+  document.getElementById('tab-rating').classList.add('active');
+});
 
 // --- Авторизация по нику ---
 
@@ -302,9 +370,8 @@ document.getElementById('profile-edit-btn').addEventListener('click', () => {
 });
 
 function hideAllScreens() {
-  document.getElementById('screen-profile').classList.add('hidden');
-  document.getElementById('screen-results').classList.add('hidden');
-  document.getElementById('screen-nickname').classList.add('hidden');
+  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player']
+    .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
 async function openProfile() {

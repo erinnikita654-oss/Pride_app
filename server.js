@@ -152,6 +152,59 @@ async function fetchSheetLines(gid) {
   );
 }
 
+// Статистика конкретного игрока за месяц
+app.get('/api/player-stats', async (req, res) => {
+  const { nickname, month } = req.query;
+  if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
+
+  const gid = SHEETS[month] || SHEETS.may;
+
+  try {
+    const lines = await fetchSheetLines(gid);
+    const dataRows = lines.slice(2);
+
+    // Найти колонки дат (между 4 и 21 включительно)
+    const header = lines[1] || [];
+    const dateCols = [];
+    for (let i = 4; i < 22; i++) {
+      if (header[i] && header[i].trim() !== '') dateCols.push({ label: header[i], idx: i });
+    }
+
+    const normalize = s => (s || '').trim().toLowerCase();
+    const playerRow = dataRows.find(cols => normalize(cols[3]) === normalize(nickname));
+
+    if (!playerRow) return res.json({ found: false });
+
+    let totalPoints = 0, gamesPlayed = 0, bestPoints = 0, bestPlace = null;
+    const games = [];
+
+    for (const { label, idx } of dateCols) {
+      const pts = parseInt(playerRow[idx]) || 0;
+      if (pts === 0) continue;
+
+      // Место среди участников этой игры
+      const dayParticipants = dataRows
+        .map(cols => parseInt(cols[idx]) || 0)
+        .filter(p => p > 0)
+        .sort((a, b) => b - a);
+
+      const place = dayParticipants.indexOf(pts) + 1;
+
+      gamesPlayed++;
+      totalPoints += pts;
+      if (pts > bestPoints) bestPoints = pts;
+      if (bestPlace === null || place < bestPlace) bestPlace = place;
+
+      games.push({ label, pts, place, total: dayParticipants.length });
+    }
+
+    res.json({ found: true, gamesPlayed, totalPoints, bestPoints, bestPlace, games });
+  } catch (e) {
+    console.error('Ошибка player-stats:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Получить прошедшие игры (последние 3 даты с данными)
 app.get('/api/past-games', async (req, res) => {
   try {
