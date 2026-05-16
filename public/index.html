@@ -20,9 +20,21 @@
     <main>
       <!-- Вкладка: Игры -->
       <section id="tab-games" class="tab-content active">
+        <div class="section-title">Предстоящие игры</div>
         <div id="games-list" class="list">
-          <div class="loading">Загрузка игр...</div>
+          <div class="loading">Загрузка...</div>
         </div>
+        <div class="section-title" style="margin-top:16px">Прошедшие игры</div>
+        <div id="past-games-list" class="list">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
+      <!-- Экран результатов игры -->
+      <section id="screen-results" class="screen hidden">
+        <button class="back-btn" id="back-btn">← Назад</button>
+        <div id="results-title" class="section-title"></div>
+        <div id="results-list" class="list"></div>
       </section>
 
       <!-- Вкладка: Рейтинг -->

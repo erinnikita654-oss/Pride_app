@@ -142,6 +142,66 @@ app.get('/api/rating', async (req, res) => {
   }
 });
 
+// Вспомогательная функция — парсинг CSV листа
+async function fetchSheetLines(gid) {
+  const response = await fetch(SHEET_BASE + gid);
+  if (!response.ok) throw new Error('Ошибка загрузки таблицы');
+  const csv = await response.text();
+  return csv.trim().split('\n').map(line =>
+    line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+  );
+}
+
+// Получить прошедшие игры (последние 3 даты с данными)
+app.get('/api/past-games', async (req, res) => {
+  try {
+    const lines = await fetchSheetLines(SHEETS.may);
+
+    // Строка 2 (индекс 1) — заголовки с датами
+    const header = lines[1] || [];
+
+    // Найти колонки с датами (между Игрок=3 и Итого=22)
+    const dateCols = [];
+    for (let i = 4; i < 22; i++) {
+      if (header[i] && header[i] !== '') {
+        // Проверить что есть хоть один игрок с данными в этой колонке
+        const hasData = lines.slice(2).some(row => parseInt(row[i]) > 0);
+        if (hasData) dateCols.push({ label: header[i], colIndex: i });
+      }
+    }
+
+    // Вернуть последние 3
+    res.json(dateCols.slice(-3).reverse());
+  } catch (e) {
+    console.error('Ошибка past-games:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Результаты конкретной игры по индексу колонки
+app.get('/api/game-results', async (req, res) => {
+  const colIndex = parseInt(req.query.col);
+  if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
+
+  try {
+    const lines = await fetchSheetLines(SHEETS.may);
+
+    const players = lines.slice(2)
+      .map(cols => ({
+        first_name: cols[3] || '',
+        rating: parseInt(cols[colIndex]) || 0,
+      }))
+      .filter(p => p.first_name !== '' && p.rating > 0)
+      .sort((a, b) => b.rating - a.rating)
+      .map((p, i) => ({ ...p, place: i + 1 }));
+
+    res.json(players);
+  } catch (e) {
+    console.error('Ошибка game-results:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Получить мои записи
 app.get('/api/my-registrations/:telegramId', async (req, res) => {
   const { data: user } = await supabase

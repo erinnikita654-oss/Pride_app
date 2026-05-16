@@ -187,6 +187,58 @@ body {
 }
 
 /* Рейтинг */
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tg-theme-hint-color, #aaa);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.screen {
+  padding: 16px;
+}
+
+.screen.hidden {
+  display: none;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--tg-theme-button-color, #c9831a);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0 0 12px 0;
+  display: block;
+}
+
+.past-game-card {
+  background: var(--tg-theme-secondary-bg-color, #16213e);
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: opacity 0.2s;
+}
+
+.past-game-card:hover { opacity: 0.8; }
+
+.past-game-date {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.past-game-arrow {
+  font-size: 18px;
+  color: var(--tg-theme-hint-color, #aaa);
+}
+
 .month-selector {
   display: flex;
   gap: 8px;
