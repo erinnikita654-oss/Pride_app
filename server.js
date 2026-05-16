@@ -148,15 +148,18 @@ async function fetchSheetLines(gid) {
   );
 }
 
-// Определить структуру листа: индексы name, total и дат
+// Определить структуру листа по заголовкам
 function detectSheetStructure(lines) {
   const header = lines[1] || [];
-  const totalIdx = header.findIndex(c => c === 'Итого');
+  const totalIdx = header.findIndex(c => c.trim().toLowerCase() === 'итого');
+  const nameIdx = header.findIndex(c => c.trim().toLowerCase() === 'игрок');
+  const resolvedName = nameIdx >= 0 ? nameIdx : 3;
+  const resolvedTotal = totalIdx >= 0 ? totalIdx : 22;
   const dateCols = [];
-  for (let i = 4; i < (totalIdx > 0 ? totalIdx : header.length); i++) {
-    if (header[i] && header[i].trim() !== '') dateCols.push({ label: header[i], idx: i });
+  for (let i = resolvedName + 1; i < resolvedTotal; i++) {
+    if (header[i] && header[i].trim() !== '') dateCols.push({ label: header[i].trim(), idx: i });
   }
-  return { nameIdx: 3, totalIdx: totalIdx > 0 ? totalIdx : 22, dateCols };
+  return { nameIdx: resolvedName, totalIdx: resolvedTotal, dateCols };
 }
 
 // Статистика конкретного игрока за месяц
