@@ -562,7 +562,15 @@ body {
   margin-bottom: 10px;
 }
 
-.profile-edit-btn {
+.profile-action-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.profile-edit-btn,
+.profile-results-btn {
   background: transparent;
   border: 1px solid var(--gold-border);
   border-radius: 8px;
@@ -570,6 +578,67 @@ body {
   font-size: 13px;
   padding: 6px 14px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.profile-results-btn {
+  background: var(--gold-dim);
+}
+
+.month-result-card {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.month-result-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+
+.month-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.month-stat {
+  text-align: center;
+}
+
+.month-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.month-stat-label {
+  font-size: 11px;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.overall-card {
+  background: linear-gradient(135deg, rgba(201,162,39,0.12), rgba(201,162,39,0.04));
+  border: 1px solid rgba(201,162,39,0.4);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.overall-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .verified-badge {

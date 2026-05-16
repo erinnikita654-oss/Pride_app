@@ -491,8 +491,99 @@ document.getElementById('profile-edit-btn').addEventListener('click', () => {
   document.getElementById('nickname-input').value = clubNickname || '';
 });
 
+document.getElementById('profile-results-btn').addEventListener('click', () => {
+  openMyResults();
+});
+
+document.getElementById('my-results-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.getElementById('screen-profile').classList.remove('hidden');
+});
+
+async function openMyResults() {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-my-results').classList.remove('hidden');
+
+  if (!telegramId) return;
+
+  const container = document.getElementById('my-results-content');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch(`/api/my-results/${telegramId}`);
+    const d = await res.json();
+
+    if (!d.months || !d.months.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>Нет данных — ник не найден в таблицах</p></div>`;
+      return;
+    }
+
+    const bestPlaceStr = d.allBestPlace ? `${d.allBestPlace} место` : '—';
+    const winsWord = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
+
+    const overallHTML = `
+      <div class="overall-card">
+        <div class="overall-title">⚡ Итого за всё время</div>
+        <div class="profile-stats">
+          <div class="stat-card">
+            <div class="stat-value">${d.totalGames}</div>
+            <div class="stat-label">Игр сыграно</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${d.totalPoints}</div>
+            <div class="stat-label">Очков всего</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${d.allBestPoints}</div>
+            <div class="stat-label">Лучший результат</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${bestPlaceStr}</div>
+            <div class="stat-label">Лучшее место</div>
+          </div>
+          <div class="stat-card wide">
+            <div class="stat-value">${d.totalWins} <span style="font-size:18px">${winsWord(d.totalWins)}</span></div>
+            <div class="stat-label">🏆 Первых мест</div>
+          </div>
+        </div>
+      </div>`;
+
+    const monthsHTML = d.months.map(m => {
+      const bp = m.bestPlace ? `${m.bestPlace} место` : '—';
+      const winsLabel = m.wins > 0 ? `🏆 ${m.wins} ${winsWord(m.wins)}` : '';
+      return `
+        <div class="month-result-card">
+          <div class="month-result-title">${m.label} ${winsLabel}</div>
+          <div class="month-result-grid">
+            <div class="month-stat">
+              <div class="month-stat-value">${m.gamesPlayed}</div>
+              <div class="month-stat-label">Игр</div>
+            </div>
+            <div class="month-stat">
+              <div class="month-stat-value">${m.monthTotal}</div>
+              <div class="month-stat-label">Очков</div>
+            </div>
+            <div class="month-stat">
+              <div class="month-stat-value">${m.bestPoints}</div>
+              <div class="month-stat-label">Лучший рез.</div>
+            </div>
+            <div class="month-stat">
+              <div class="month-stat-value">${bp}</div>
+              <div class="month-stat-label">Лучшее место</div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = overallHTML + monthsHTML;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
 function hideAllScreens() {
-  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player', 'screen-all-games']
+  ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player', 'screen-all-games', 'screen-my-results']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 

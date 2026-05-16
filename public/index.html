@@ -61,6 +61,15 @@
         </div>
       </section>
 
+      <!-- Экран моих результатов -->
+      <section id="screen-my-results" class="screen hidden">
+        <button class="back-btn" id="my-results-back-btn">← Назад</button>
+        <div class="section-title" style="margin-bottom:16px">Мои результаты</div>
+        <div id="my-results-content">
+          <div class="loading">Загрузка...</div>
+        </div>
+      </section>
+
       <!-- Экран статистики игрока -->
       <section id="screen-player" class="screen hidden">
         <button class="back-btn" id="player-back-btn">← Назад</button>
@@ -79,7 +88,10 @@
         <div class="profile-header">
           <div class="profile-avatar" id="profile-avatar"></div>
           <div class="profile-nickname" id="profile-nickname"></div>
-          <button class="profile-edit-btn" id="profile-edit-btn">✏️ Изменить ник</button>
+          <div class="profile-action-btns">
+            <button class="profile-edit-btn" id="profile-edit-btn">✏️ Изменить ник</button>
+            <button class="profile-results-btn" id="profile-results-btn">📊 Мои результаты</button>
+          </div>
         </div>
         <div class="profile-stats" id="profile-stats">
           <div class="loading">Загрузка...</div>
