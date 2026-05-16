@@ -426,8 +426,14 @@ body {
 }
 
 .nickname-logo {
-  font-size: 64px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.nickname-logo img {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .nickname-title {
