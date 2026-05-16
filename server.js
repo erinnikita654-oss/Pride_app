@@ -106,6 +106,13 @@ app.delete('/api/games/:id/register', async (req, res) => {
   res.json({ success: true });
 });
 
+// Отладка CSV
+app.get('/api/debug-csv', async (req, res) => {
+  const response = await fetch(SHEET_CSV_URL);
+  const text = await response.text();
+  res.send(`<pre>${text.slice(0, 2000)}</pre>`);
+});
+
 // Получить рейтинг из Google Sheets
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=675526994';
 
