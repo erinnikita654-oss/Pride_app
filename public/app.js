@@ -333,7 +333,17 @@ async function openProfile() {
     const rankText = s.rank ? `#${s.rank}` : '—';
     const rankLabel = s.rank && s.rank <= 27 ? '🏆 Финалист' : 'Место в мае';
 
-    statsEl.innerHTML = `
+    const verifiedBadge = s.foundInSheet
+      ? `<div class="verified-badge">✓ Участник клуба</div>`
+      : `<div class="unverified-badge">⚠️ Ник не найден в таблице</div>`;
+
+    document.querySelector('.profile-header').insertAdjacentHTML('beforeend', verifiedBadge);
+    // Убрать старый бейдж если был
+    document.querySelectorAll('.verified-badge, .unverified-badge').forEach((el, i) => {
+      if (i > 0) el.remove();
+    });
+
+    statsEl.innerHTML = s.foundInSheet ? `
       <div class="stat-card">
         <div class="stat-value">${rankText}</div>
         <div class="stat-label">${rankLabel}</div>
@@ -349,6 +359,16 @@ async function openProfile() {
       <div class="stat-card">
         <div class="stat-value">${s.bestGame || '—'}</div>
         <div class="stat-label">Лучший результат</div>
+      </div>
+      <div class="stat-card wide">
+        <div class="stat-value" style="font-size:16px">${memberDate}</div>
+        <div class="stat-label">В клубе с</div>
+      </div>` : `
+      <div class="stat-card wide">
+        <div class="stat-label" style="font-size:14px;line-height:1.6">
+          Ник не совпадает ни с одним участником в таблице.<br>
+          Нажми <strong>«Изменить ник»</strong> и введи точно так же, как в рейтинге клуба.
+        </div>
       </div>
       <div class="stat-card wide">
         <div class="stat-value" style="font-size:16px">${memberDate}</div>

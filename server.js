@@ -223,13 +223,14 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Не найден' });
 
   const nickname = user.first_name || '';
-  let monthPoints = 0, gamesPlayed = 0, bestGame = 0, rank = null;
+  let monthPoints = 0, gamesPlayed = 0, bestGame = 0, rank = null, foundInSheet = false;
 
   try {
     const lines = await fetchSheetLines(SHEETS.may);
     const dataRows = lines.slice(2);
 
-    const playerRow = dataRows.find(cols => cols[3] === nickname);
+    const normalize = s => (s || '').trim().toLowerCase();
+    const playerRow = dataRows.find(cols => normalize(cols[3]) === normalize(nickname));
 
     if (playerRow) {
       monthPoints = parseInt(playerRow[22]) || 0;
@@ -237,6 +238,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
         const pts = parseInt(playerRow[i]) || 0;
         if (pts > 0) { gamesPlayed++; if (pts > bestGame) bestGame = pts; }
       }
+      foundInSheet = true;
     }
 
     const ranked = dataRows
@@ -244,7 +246,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
       .filter(p => p.name && p.pts > 0)
       .sort((a, b) => b.pts - a.pts);
 
-    const idx = ranked.findIndex(p => p.name === nickname);
+    const idx = ranked.findIndex(p => normalize(p.name) === normalize(nickname));
     if (idx !== -1) rank = idx + 1;
   } catch (e) {}
 
@@ -254,6 +256,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
     gamesPlayed,
     bestGame,
     rank,
+    foundInSheet,
     memberSince: user.created_at,
   });
 });
