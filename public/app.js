@@ -159,18 +159,33 @@ async function loadRating() {
       return;
     }
 
+    const FINAL_SPOTS = 27;
+
+    // Разделитель перед незачётными
+    let addedDivider = false;
+
     container.innerHTML = players.map((p) => {
       const placeNum = p.place;
+      const isFinalist = placeNum <= FINAL_SPOTS;
       const placeClass = placeNum === 1 ? 'gold' : placeNum === 2 ? 'silver' : placeNum === 3 ? 'bronze' : '';
       const place = placeNum === 1 ? '🥇' : placeNum === 2 ? '🥈' : placeNum === 3 ? '🥉' : `${placeNum}`;
       const name = p.first_name || 'Игрок';
-      return `
-        <div class="rating-item">
+
+      let divider = '';
+      if (!isFinalist && !addedDivider) {
+        addedDivider = true;
+        divider = `<div class="rating-divider">— вне финала —</div>`;
+      }
+
+      return `${divider}
+        <div class="rating-item ${isFinalist ? 'finalist' : 'non-finalist'}">
           <div class="rating-place ${placeClass}">${place}</div>
-          <div class="rating-name">${name}</div>
+          <div class="rating-name">
+            ${name}
+            ${isFinalist ? '<span class="finalist-badge">финал</span>' : ''}
+          </div>
           <div class="rating-score">${p.rating} очк.</div>
-        </div>
-      `;
+        </div>`;
     }).join('');
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;

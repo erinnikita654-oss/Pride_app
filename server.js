@@ -106,35 +106,27 @@ app.delete('/api/games/:id/register', async (req, res) => {
   res.json({ success: true });
 });
 
-// Отладка CSV
-app.get('/api/debug-csv', async (req, res) => {
-  const response = await fetch(SHEET_CSV_URL);
-  const text = await response.text();
-  res.send(`<pre>${text.slice(0, 2000)}</pre>`);
-});
-
-// Получить рейтинг из Google Sheets
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=675526994';
 
+// Получить рейтинг из Google Sheets
 app.get('/api/rating', async (req, res) => {
   try {
     const response = await fetch(SHEET_CSV_URL);
     if (!response.ok) throw new Error('Ошибка загрузки таблицы');
 
     const csv = await response.text();
-    const lines = csv.trim().split('\n').slice(1); // пропускаем заголовок
+    const lines = csv.trim().split('\n');
 
     const players = lines
       .map(line => {
-        // Поддержка разделителей , и ;
-        const sep = line.includes(';') ? ';' : ',';
-        const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
-        const place = parseInt(cols[0]);
-        const name = cols[1] || '';
-        const points = parseInt(cols[2]) || 0;
-        return { place, first_name: name, rating: points };
+        const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        const name = cols[3] || '';    // колонка D
+        const points = parseInt(cols[22]) || 0; // колонка W
+        return { first_name: name, rating: points };
       })
-      .filter(p => p.first_name !== '' && !isNaN(p.place) && p.place > 0);
+      .filter(p => p.first_name !== '' && p.rating > 0)
+      .sort((a, b) => b.rating - a.rating)
+      .map((p, i) => ({ ...p, place: i + 1 }));
 
     res.json(players);
   } catch (e) {
