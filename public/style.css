@@ -390,12 +390,13 @@ body {
 }
 
 .rating-banner-img {
-  width: 90px;
-  height: 90px;
+  width: 100px;
+  height: 100px;
   object-fit: cover;
   border-radius: 50%;
-  opacity: 0.6;
+  opacity: 1;
   flex-shrink: 0;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
 }
 
 /* Сетка разделов */
