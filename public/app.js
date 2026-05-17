@@ -732,7 +732,9 @@ async function openMyResults() {
   container.innerHTML = '<div class="loading">Загрузка...</div>';
 
   try {
-    const res = await fetch(`/api/my-results/${telegramId}`);
+    const res = isWeb
+      ? await fetch(`/api/player-overall?nickname=${encodeURIComponent(clubNickname)}`)
+      : await fetch(`/api/my-results/${telegramId}`);
     const d = await res.json();
 
     if (!d.months || !d.months.length) {
@@ -830,7 +832,9 @@ async function openProfile() {
   container.innerHTML = '<div class="loading">Загрузка...</div>';
 
   try {
-    const res = await fetch(`/api/my-results/${telegramId}`);
+    const res = isWeb
+      ? await fetch(`/api/player-overall?nickname=${encodeURIComponent(clubNickname)}`)
+      : await fetch(`/api/my-results/${telegramId}`);
     const d = await res.json();
 
     if (!d.months || !d.months.length) {
