@@ -726,7 +726,7 @@ async function openMyResults() {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-my-results').classList.remove('hidden');
 
-  if (!telegramId) return;
+  if (!telegramId && !isWeb) return;
 
   const container = document.getElementById('my-results-content');
   container.innerHTML = '<div class="loading">Загрузка...</div>';
@@ -826,7 +826,7 @@ async function openProfile() {
   document.getElementById('profile-avatar').textContent = letter;
   document.getElementById('profile-nickname').textContent = clubNickname || 'Гость';
 
-  if (!telegramId) return;
+  if (!telegramId && !isWeb) return;
 
   const container = document.getElementById('profile-content');
   container.innerHTML = '<div class="loading">Загрузка...</div>';
