@@ -1007,9 +1007,11 @@ body {
   color: #0a0a0a;
   font-size: 15px;
   font-weight: 700;
-  padding: 12px;
+  padding: 14px;
   cursor: pointer;
   transition: opacity 0.2s;
+  width: 100%;
+  display: block;
 }
 
 .profile-results-btn:hover {

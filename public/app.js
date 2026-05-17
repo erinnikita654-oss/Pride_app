@@ -624,7 +624,7 @@ async function openPlayerOverall(nickname, from = 'players') {
         </div>`;
     }).join('');
 
-    container.innerHTML = overallHTML + monthsHTML;
+    container.innerHTML = monthsHTML;
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
   }
