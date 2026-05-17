@@ -318,6 +318,7 @@ async function loadPastGames() {
 }
 
 let gameResultsFrom = 'games';
+let playerOverallFrom = 'players';
 
 async function openGameResults(colIndex, label, from = 'games') {
   gameResultsFrom = from;
@@ -342,12 +343,16 @@ async function openGameResults(colIndex, label, from = 'games') {
       const placeClass = p.place === 1 ? 'gold' : p.place === 2 ? 'silver' : p.place === 3 ? 'bronze' : '';
       const place = p.place === 1 ? '🥇' : p.place === 2 ? '🥈' : p.place === 3 ? '🥉' : `${p.place}`;
       return `
-        <div class="rating-item">
+        <div class="rating-item" style="cursor:pointer" data-nickname="${p.first_name}">
           <div class="rating-place ${placeClass}">${place}</div>
           <div class="rating-name">${p.first_name}</div>
           <div class="rating-score">${p.rating} очк.</div>
         </div>`;
     }).join('');
+
+    container.querySelectorAll('.rating-item[data-nickname]').forEach(el => {
+      el.addEventListener('click', () => openPlayerOverall(el.dataset.nickname, 'results'));
+    });
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
   }
@@ -514,8 +519,15 @@ document.getElementById('players-search').addEventListener('input', e => {
 
 document.getElementById('player-overall-back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'players'));
-  document.getElementById('tab-players').classList.add('active');
+  if (playerOverallFrom === 'results') {
+    document.getElementById('screen-results').classList.remove('hidden');
+  } else if (playerOverallFrom === 'legends') {
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'legends'));
+    document.getElementById('tab-legends').classList.add('active');
+  } else {
+    document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'players'));
+    document.getElementById('tab-players').classList.add('active');
+  }
 });
 
 async function loadAllPlayers() {
@@ -555,7 +567,8 @@ function renderPlayersList(players) {
   });
 }
 
-async function openPlayerOverall(nickname) {
+async function openPlayerOverall(nickname, from = 'players') {
+  playerOverallFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-player-overall').classList.remove('hidden');
@@ -636,7 +649,7 @@ async function loadLegends() {
     const winsWord   = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
 
     container.innerHTML = legends.map(p => `
-      <div class="legend-item ${itemClass(p.place)}">
+      <div class="legend-item ${itemClass(p.place)}" style="cursor:pointer" data-nickname="${p.name}">
         <div class="legend-place ${placeClass(p.place)}">${placeIcon(p.place)}</div>
         <div class="legend-name">${p.name}</div>
         <div class="legend-wins">
@@ -644,6 +657,10 @@ async function loadLegends() {
           <div class="legend-wins-label">${winsWord(p.count)}</div>
         </div>
       </div>`).join('');
+
+    container.querySelectorAll('.legend-item[data-nickname]').forEach(el => {
+      el.addEventListener('click', () => openPlayerOverall(el.dataset.nickname, 'legends'));
+    });
   } catch (e) {
     container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
   }
