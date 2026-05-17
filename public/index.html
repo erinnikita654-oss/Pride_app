@@ -20,15 +20,177 @@
     <main>
       <!-- Вкладка: Игры -->
       <section id="tab-games" class="tab-content active">
-        <div class="section-title">Предстоящие игры</div>
-        <div id="games-list" class="list">
+
+        <!-- Ближайший турнир -->
+        <div class="home-section-label">Ближайший турнир</div>
+        <div id="nearest-game">
           <div class="loading">Загрузка...</div>
         </div>
-        <div class="section-title" style="margin-top:16px">Прошедшие игры</div>
+
+        <!-- Баннер рейтинга -->
+        <div class="rating-banner" id="home-rating-btn">
+          <div class="rating-banner-text">
+            <div class="rating-banner-title">РЕЙТИНГ<br>PRIDE</div>
+            <button class="rating-banner-btn">★ Рейтинг игроков</button>
+          </div>
+          <img src="logo.jpg" alt="PRIDE" class="rating-banner-img">
+        </div>
+
+        <!-- Сетка разделов -->
+        <div class="home-grid">
+          <div class="home-card" id="home-about-btn">
+            <div class="home-card-title">О КЛУБЕ</div>
+            <div class="home-card-sub">ℹ История</div>
+          </div>
+          <div class="home-card" id="home-rules-btn">
+            <div class="home-card-title">ПРАВИЛА</div>
+            <div class="home-card-sub">📋 Турниры</div>
+          </div>
+        </div>
+
+        <!-- Прошедшие игры -->
+        <div class="home-section-label" style="margin-top:8px">Прошедшие игры</div>
         <div id="past-games-list" class="list">
           <div class="loading">Загрузка...</div>
         </div>
         <button class="btn-all-games" id="btn-all-games">Все прошедшие игры →</button>
+      </section>
+
+      <!-- Экран: О клубе -->
+      <section id="screen-about" class="screen hidden">
+        <button class="back-btn" id="about-back-btn">← Назад</button>
+        <div class="about-logo">
+          <img src="logo.jpg" alt="PRIDE">
+        </div>
+        <div class="about-content">
+          <h2 class="about-title">PRIDE</h2>
+          <p class="about-tagline">Play with Pride. Win with Honor.</p>
+          <p class="about-text">PRIDE — покерный клуб для тех, кто ценит честную игру и настоящий азарт. Мы объединяем игроков разного уровня — от новичков до опытных профессионалов.</p>
+          <p class="about-text">Клуб проводит регулярные турниры с уникальными форматами, ведёт рейтинг игроков и создаёт атмосферу настоящего покерного братства.</p>
+          <div class="about-stats">
+            <div class="about-stat"><div class="about-stat-num">3</div><div class="about-stat-label">Месяца</div></div>
+            <div class="about-stat"><div class="about-stat-num">50+</div><div class="about-stat-label">Игроков</div></div>
+            <div class="about-stat"><div class="about-stat-num">30+</div><div class="about-stat-label">Турниров</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Экран: Правила турниров -->
+      <section id="screen-rules" class="screen hidden">
+        <button class="back-btn" id="rules-back-btn">← Назад</button>
+        <div class="section-title" style="margin-bottom:16px">Правила турниров</div>
+        <div class="list" id="rules-list">
+
+          <!-- Lion King -->
+          <div class="rules-card" data-rule="lion">
+            <div class="rules-card-header">
+              <div class="rules-card-title">💖 THE LION KING</div>
+              <div class="rules-card-arrow">›</div>
+            </div>
+          </div>
+          <div class="rules-body hidden" id="rule-lion">
+            <p><strong>⭐️ Особенности турнира</strong></p>
+            <p>В начале игры за каждым столом рандомно выбирается 👑 Король Лев с преимуществом!</p>
+            <ul>
+              <li>Выбивание оппонента — <strong>5 баллов</strong></li>
+              <li>Выбивание в статусе короля — <strong>10 баллов</strong></li>
+              <li>Ликвидируй короля и займи его место!</li>
+              <li>Если тебя выбили будучи королём — бесплатный re-entry</li>
+              <li>Продержался королём до финального стола — <strong>+20 баллов</strong></li>
+              <li>Победил в статусе короля — <strong>+50 баллов</strong></li>
+              <li>За выбивание короля после поздней регистрации — 🍹 бесплатный напиток</li>
+            </ul>
+            <p><strong>⚙️ Детали</strong></p>
+            <ul>
+              <li>Стартовый стек — 30.000 (300бб)</li>
+              <li>Уровни — от 17 до 12 минут</li>
+              <li>Поздняя регистрация — до 21:30</li>
+            </ul>
+            <p><strong>⭐ Стоимость</strong></p>
+            <ul>
+              <li>Орг. сбор — 1000₽</li>
+              <li>Re-entry — 1000₽</li>
+              <li>Аддонов нет</li>
+            </ul>
+            <p><strong>🎁 Бонусы</strong></p>
+            <ul>
+              <li>Early bird — 3000 фишек</li>
+              <li>При заказе кальяна — 6000 фишек</li>
+              <li>Регистрация через бота (первые 15) — +3000 фишек</li>
+              <li>Победа с ♥️♥️ — +10ББ</li>
+            </ul>
+          </div>
+
+          <!-- Continental -->
+          <div class="rules-card" data-rule="continental">
+            <div class="rules-card-header">
+              <div class="rules-card-title">🌍 CONTINENTAL</div>
+              <div class="rules-card-arrow">›</div>
+            </div>
+          </div>
+          <div class="rules-body hidden" id="rule-continental">
+            <p><strong>📜 Что такое Continental?</strong></p>
+            <ul>
+              <li>Каждый игрок получает «вексель» в начале турнира</li>
+              <li>При выбивании вексель переходит победителю</li>
+              <li>При re-entry выдаётся новый вексель</li>
+              <li>Если у выбитого несколько векселей — все переходят победителю</li>
+            </ul>
+            <p><strong>✨ Обмен векселей</strong></p>
+            <ul>
+              <li>5 векселей — 10бб (до конца поздней регистрации)</li>
+              <li>10 векселей — 🍹 напиток из бара</li>
+              <li>15 векселей — 💨 кальян</li>
+              <li>20 векселей — 👕 брендированная футболка клуба</li>
+            </ul>
+            <p><strong>⚙️ Детали</strong></p>
+            <ul>
+              <li>Стартовый стек — 30.000</li>
+              <li>Блайнды — 100/100/100 ante</li>
+              <li>Уровни — от 17 до 12 минут</li>
+              <li>Поздняя регистрация — до 21:30</li>
+            </ul>
+            <p><strong>⭐ Стоимость</strong></p>
+            <ul>
+              <li>Орг. сбор — 1000₽ / Re-entry — 1000₽</li>
+              <li>Аддонов нет</li>
+            </ul>
+            <p><strong>🎁 Бонусы</strong></p>
+            <ul>
+              <li>Early bird — 3000 фишек</li>
+              <li>При заказе кальяна — 6000 фишек</li>
+              <li>Регистрация через бота (первые 15) — +3000 фишек</li>
+              <li>Победа с ♥️♥️ или ♠️♠️ — +10ББ</li>
+            </ul>
+          </div>
+
+          <!-- Discipline -->
+          <div class="rules-card" data-rule="discipline">
+            <div class="rules-card-header">
+              <div class="rules-card-title">⚡ DISCIPLINE</div>
+              <div class="rules-card-arrow">›</div>
+            </div>
+          </div>
+          <div class="rules-body hidden" id="rule-discipline">
+            <p><strong>📌 Правила</strong></p>
+            <ul>
+              <li>Только <strong>1 re-entry</strong> на весь турнир</li>
+              <li>Не сделал re-entry — <strong>+10 баллов</strong> в рейтинг</li>
+              <li>Финальный стол (10 игроков) — <strong>+10 баллов</strong></li>
+              <li>Призовой пул = (кол-во входов × 10) × 2</li>
+            </ul>
+            <p><strong>📊 Пример</strong></p>
+            <p>Пул 500 × 2 = 1000 баллов. 1 место = 20% = 200 баллов + бонусы за дисциплину и финальный стол.</p>
+            <p><strong>🎁 Специальные бонусы</strong></p>
+            <ul>
+              <li>Классические бонусы не работают</li>
+              <li>Bad beat с 🃏🃏 или 🅰️🅰️ в позднюю рег. — компенсация 10ББ</li>
+              <li>Bad beat после поздней рег. — 10.000 фишек на след. Discipline</li>
+              <li>4-е место (перед 3max) — бесплатный вход на следующий Discipline</li>
+            </ul>
+          </div>
+
+        </div>
       </section>
 
       <!-- Экран всех прошедших игр -->

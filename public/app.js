@@ -113,6 +113,80 @@ function formatDate(dateStr) {
   });
 }
 
+// Ближайший турнир
+async function loadNearestGame() {
+  const container = document.getElementById('nearest-game');
+  try {
+    const res = await fetch('/api/games');
+    const games = await res.json();
+    if (!games.length) {
+      container.innerHTML = `<div class="empty-state" style="padding:20px"><p>Нет запланированных игр</p></div>`;
+      return;
+    }
+    const g = games[0];
+    const regCount = g.reg_count || 0;
+    const d = new Date(g.date);
+    const dateStr = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'numeric' });
+    const timeStr = d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    container.innerHTML = `
+      <div class="nearest-card">
+        <div class="nearest-card-info">
+          <div class="nearest-card-title">${g.title}</div>
+          <div class="nearest-card-chips">
+            <div class="chip">👥 ${regCount}/${g.max_players} мест</div>
+            <div class="chip">🕐 ${dateStr} / ${timeStr}</div>
+            ${g.buy_in ? `<div class="chip">💰 ${g.buy_in}</div>` : ''}
+          </div>
+        </div>
+        <img src="logo.jpg" alt="" class="nearest-card-img" onerror="this.style.display='none'">
+      </div>`;
+  } catch (e) {
+    container.innerHTML = '';
+  }
+}
+
+// Навигация О клубе и Правила
+document.getElementById('home-about-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-about').classList.remove('hidden');
+});
+
+document.getElementById('home-rules-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-rules').classList.remove('hidden');
+});
+
+document.getElementById('home-rating-btn').addEventListener('click', () => switchTab('rating'));
+
+document.getElementById('about-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'games'));
+  document.getElementById('tab-games').classList.add('active');
+});
+
+document.getElementById('rules-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'games'));
+  document.getElementById('tab-games').classList.add('active');
+});
+
+// Аккордеон правил
+document.querySelectorAll('.rules-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const ruleId = card.dataset.rule;
+    const body = document.getElementById(`rule-${ruleId}`);
+    const isOpen = !body.classList.contains('hidden');
+    document.querySelectorAll('.rules-body').forEach(b => b.classList.add('hidden'));
+    document.querySelectorAll('.rules-card').forEach(c => c.classList.remove('open'));
+    if (!isOpen) {
+      body.classList.remove('hidden');
+      card.classList.add('open');
+    }
+  });
+});
+
 // --- Будущие игры ---
 
 async function loadGames() {
@@ -577,6 +651,7 @@ async function loadLegends() {
 
 async function initAuth() {
   if (!telegramId) {
+    loadNearestGame();
     loadGames();
     loadPastGames();
     return;
@@ -587,6 +662,7 @@ async function initAuth() {
 
   if (profile && profile.first_name) {
     clubNickname = profile.first_name;
+    loadNearestGame();
     loadGames();
     loadPastGames();
   } else {
@@ -706,7 +782,8 @@ async function openMyResults() {
 
 function hideAllScreens() {
   ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
-   'screen-all-games', 'screen-my-results', 'screen-player-overall']
+   'screen-all-games', 'screen-my-results', 'screen-player-overall',
+   'screen-about', 'screen-rules']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 

@@ -280,6 +280,269 @@ body {
 }
 
 /* Прошедшие игры */
+/* Главная страница */
+.home-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hint);
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+
+/* Ближайший турнир */
+.nearest-card {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.nearest-card-info { flex: 1; }
+
+.nearest-card-title {
+  font-size: 18px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+
+.nearest-card-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  background: rgba(255,255,255,0.07);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nearest-card-img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* Баннер рейтинга */
+.rating-banner {
+  background: linear-gradient(135deg, #8b0000, #5a0000);
+  border-radius: 16px;
+  padding: 18px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.rating-banner-title {
+  font-size: 22px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.rating-banner-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  color: #fff;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rating-banner-img {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* Сетка разделов */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.home-card {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.home-card:hover { background: var(--bg-card2); }
+
+.home-card-title {
+  font-size: 15px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.home-card-sub {
+  font-size: 12px;
+  color: var(--hint);
+}
+
+/* О клубе */
+.about-logo {
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
+.about-logo img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.about-content { padding: 0 4px; }
+
+.about-title {
+  font-size: 28px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #f0c040, #c9a227);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.about-tagline {
+  text-align: center;
+  font-size: 13px;
+  color: var(--hint);
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.about-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.about-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.about-stat {
+  flex: 1;
+  text-align: center;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 14px 8px;
+  border: 1px solid var(--gold-border);
+}
+
+.about-stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.about-stat-label {
+  font-size: 11px;
+  color: var(--hint);
+  margin-top: 2px;
+}
+
+/* Правила турниров */
+.rules-card {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.rules-card:hover { background: var(--bg-card2); }
+
+.rules-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.rules-card-title {
+  font-size: 16px;
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.rules-card-arrow {
+  font-size: 22px;
+  color: var(--gold);
+  transition: transform 0.2s;
+}
+
+.rules-card.open .rules-card-arrow { transform: rotate(90deg); }
+
+.rules-body {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.rules-body.hidden { display: none; }
+
+.rules-body p { margin-bottom: 8px; }
+
+.rules-body ul {
+  padding-left: 16px;
+  margin-bottom: 10px;
+}
+
+.rules-body li { margin-bottom: 4px; color: var(--hint); }
+
+.rules-body strong { color: var(--gold-light); }
+
 .btn-all-games {
   width: 100%;
   margin-top: 12px;
