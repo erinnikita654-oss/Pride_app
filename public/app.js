@@ -809,71 +809,66 @@ async function openProfile() {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-profile').classList.remove('hidden');
 
-  // Аватар — первая буква ника
   const letter = (clubNickname || '?')[0].toUpperCase();
   document.getElementById('profile-avatar').textContent = letter;
   document.getElementById('profile-nickname').textContent = clubNickname || 'Гость';
 
   if (!telegramId) return;
 
-  const statsEl = document.getElementById('profile-stats');
-  statsEl.innerHTML = '<div class="loading">Загрузка...</div>';
+  const container = document.getElementById('profile-content');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
 
   try {
-    const res = await fetch(`/api/profile-stats/${telegramId}`);
-    const s = await res.json();
+    const res = await fetch(`/api/my-results/${telegramId}`);
+    const d = await res.json();
 
-    const memberDate = new Date(s.memberSince).toLocaleDateString('ru-RU', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-
-    const rankText = s.rank ? `#${s.rank}` : '—';
-    const monthNames = { may: 'в Мае', april: 'в Апреле', march: 'в Марте' };
-    const rankLabel = `Рейтинг ${monthNames[currentMonth] || 'за месяц'}`;
-
-    const verifiedBadge = s.foundInSheet
-      ? `<div class="verified-badge">✓ Участник клуба</div>`
-      : `<div class="unverified-badge">⚠️ Ник не найден в таблице</div>`;
-
-    document.querySelector('.profile-header').insertAdjacentHTML('beforeend', verifiedBadge);
-    // Убрать старый бейдж если был
-    document.querySelectorAll('.verified-badge, .unverified-badge').forEach((el, i) => {
-      if (i > 0) el.remove();
-    });
-
-    statsEl.innerHTML = s.foundInSheet ? `
-      <div class="stat-card">
-        <div class="stat-value">${rankText}</div>
-        <div class="stat-label">${rankLabel}</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${s.monthPoints}</div>
-        <div class="stat-label">Очков за Май</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${s.gamesPlayed}</div>
-        <div class="stat-label">Игр сыграно</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${s.bestGame || '—'}</div>
-        <div class="stat-label">Лучший результат</div>
-      </div>
-      <div class="stat-card wide">
-        <div class="stat-value" style="font-size:16px">${memberDate}</div>
-        <div class="stat-label">В клубе с</div>
-      </div>` : `
-      <div class="stat-card wide">
-        <div class="stat-label" style="font-size:14px;line-height:1.6">
-          Ник не совпадает ни с одним участником в таблице.<br>
-          Нажми <strong>«Изменить ник»</strong> и введи точно так же, как в рейтинге клуба.
+    if (!d.months || !d.months.length) {
+      container.innerHTML = `<div class="stat-card wide" style="margin-bottom:12px">
+        <div class="stat-label" style="font-size:14px;line-height:1.6;text-align:center">
+          Ник не найден в таблице.<br>Нажми <strong>«Изменить ник»</strong> и введи точно как в рейтинге.
         </div>
-      </div>
-      <div class="stat-card wide">
-        <div class="stat-value" style="font-size:16px">${memberDate}</div>
-        <div class="stat-label">В клубе с</div>
       </div>`;
+      return;
+    }
+
+    const winsWord = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
+    const bp = d.allBestPlace ? `${d.allBestPlace} место` : '—';
+
+    const overallHTML = `
+      <div class="overall-card" style="margin-bottom:12px">
+        <div class="overall-title">⚡ За всё время</div>
+        <div class="profile-stats">
+          <div class="stat-card"><div class="stat-value">${d.totalGames}</div><div class="stat-label">Игр</div></div>
+          <div class="stat-card"><div class="stat-value">${d.totalPoints}</div><div class="stat-label">Очков</div></div>
+          <div class="stat-card"><div class="stat-value">${d.allBestPoints}</div><div class="stat-label">Лучший рез.</div></div>
+          <div class="stat-card"><div class="stat-value">${bp}</div><div class="stat-label">Лучшее место</div></div>
+          <div class="stat-card wide">
+            <div class="stat-value">${d.totalWins} <span style="font-size:18px">${winsWord(d.totalWins)}</span></div>
+            <div class="stat-label">🏆 Первых мест</div>
+          </div>
+        </div>
+      </div>`;
+
+    const current = d.months[0];
+    const cbp = current.bestPlace ? `${current.bestPlace} место` : '—';
+    const winsTag = current.wins > 0 ? `<div class="month-result-wins">🏆 ${current.wins} ${winsWord(current.wins)}</div>` : '';
+    const currentHTML = `
+      <div class="month-result-card" style="margin-bottom:12px">
+        <div class="month-result-header">
+          <div class="month-result-title">${current.label}</div>
+          ${winsTag}
+        </div>
+        <div class="month-result-grid">
+          <div class="month-stat"><div class="month-stat-value">${current.gamesPlayed}</div><div class="month-stat-label">Игр</div></div>
+          <div class="month-stat"><div class="month-stat-value">${current.monthTotal}</div><div class="month-stat-label">Очков</div></div>
+          <div class="month-stat"><div class="month-stat-value">${current.bestPoints}</div><div class="month-stat-label">Лучший рез.</div></div>
+          <div class="month-stat"><div class="month-stat-value">${cbp}</div><div class="month-stat-label">Лучшее место</div></div>
+        </div>
+      </div>`;
+
+    container.innerHTML = overallHTML + currentHTML;
   } catch (e) {
-    statsEl.innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
   }
 }
 
