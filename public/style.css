@@ -52,17 +52,29 @@ body {
 .profile-btn {
   background: none;
   border: 1px solid var(--gold-border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--gold);
-  font-size: 18px;
-  width: 34px;
-  height: 34px;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
   position: absolute;
-  right: 16px;
+  right: 0;
+}
+
+.profile-btn-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.profile-btn-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--gold);
 }
 
 .header-logo img {
