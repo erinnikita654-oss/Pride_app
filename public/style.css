@@ -109,8 +109,8 @@ body {
   align-items: center;
   justify-content: space-around;
   background: #1c1c1c;
-  border-radius: 40px;
-  padding: 6px;
+  border-radius: 50px;
+  padding: 8px;
   gap: 4px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.5);
   border: 1px solid rgba(255,255,255,0.06);
@@ -119,10 +119,10 @@ body {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
+  gap: 7px;
+  padding: 13px 18px;
   border: none;
-  border-radius: 30px;
+  border-radius: 38px;
   background: transparent;
   color: #666;
   cursor: pointer;
@@ -131,12 +131,12 @@ body {
 }
 
 .nav-item .nav-icon {
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
 }
 
 .nav-item .nav-label {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   display: none;
 }
@@ -151,7 +151,7 @@ body {
 }
 
 .nav-item.active .nav-icon {
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .list {
