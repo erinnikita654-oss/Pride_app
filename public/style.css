@@ -356,7 +356,7 @@ body {
 
 /* Баннер рейтинга */
 .rating-banner {
-  background: linear-gradient(135deg, #c0c0c0, #6e6e6e);
+  background: linear-gradient(135deg, #ffffff, #a0a0a0);
   border-radius: 16px;
   padding: 18px 16px;
   margin-bottom: 14px;
