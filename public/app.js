@@ -7,6 +7,10 @@ const telegramId = user?.id || null;
 const username = user?.username || '';
 const firstName = user?.first_name || 'Игрок';
 
+// Веб-версия: ник хранится в localStorage
+const isWeb = !telegramId;
+const WEB_NICKNAME_KEY = 'pride_nickname';
+
 let myRegistrations = new Set();
 
 // --- Навигация ---
@@ -667,7 +671,14 @@ async function loadLegends() {
 }
 
 async function initAuth() {
-  if (!telegramId) {
+  if (isWeb) {
+    // Веб-версия: ник из localStorage
+    const saved = localStorage.getItem(WEB_NICKNAME_KEY);
+    if (saved) {
+      clubNickname = saved;
+    } else {
+      document.getElementById('screen-nickname').classList.remove('hidden');
+    }
     loadNearestGame();
     loadGames();
     loadPastGames();
@@ -883,6 +894,13 @@ document.getElementById('nickname-btn').addEventListener('click', async () => {
   const btn = document.getElementById('nickname-btn');
   btn.disabled = true;
   btn.textContent = 'Сохраняем...';
+
+  if (isWeb) {
+    // Веб: сохраняем только в localStorage
+    localStorage.setItem(WEB_NICKNAME_KEY, nickname);
+    window.location.reload();
+    return;
+  }
 
   const res = await fetch('/api/profile/set-nickname', {
     method: 'POST',
