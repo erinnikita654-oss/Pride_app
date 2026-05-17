@@ -356,7 +356,7 @@ body {
 
 /* Баннер рейтинга */
 .rating-banner {
-  background: linear-gradient(135deg, #b8860b, #4a3500);
+  background: linear-gradient(135deg, #c0c0c0, #6e6e6e);
   border-radius: 16px;
   padding: 18px 16px;
   margin-bottom: 14px;
@@ -373,16 +373,16 @@ body {
   font-weight: 900;
   font-style: italic;
   text-transform: uppercase;
-  color: #f0c040;
+  color: #0a0a0a;
   line-height: 1.15;
   margin-bottom: 12px;
 }
 
 .rating-banner-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(240,192,64,0.4);
+  background: rgba(0,0,0,0.15);
+  border: 1px solid rgba(0,0,0,0.2);
   border-radius: 20px;
-  color: #f0c040;
+  color: #0a0a0a;
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 600;
