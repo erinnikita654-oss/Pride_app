@@ -346,8 +346,8 @@ body {
 }
 
 .nearest-card-img {
-  width: 70px;
-  height: 70px;
+  width: 85px;
+  height: 85px;
   object-fit: cover;
   border-radius: 50%;
   flex-shrink: 0;
@@ -390,8 +390,8 @@ body {
 }
 
 .rating-banner-img {
-  width: 100px;
-  height: 100px;
+  width: 85px;
+  height: 85px;
   object-fit: cover;
   border-radius: 50%;
   opacity: 1;
