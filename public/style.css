@@ -86,12 +86,13 @@ body {
 .tab-content {
   display: none;
   padding: 16px;
-  padding-bottom: 90px;
+  padding-bottom: 110px;
 }
 
 .tab-content.active {
   display: block;
 }
+
 
 /* Нижняя навигация */
 .bottom-nav {
@@ -645,9 +646,10 @@ body {
   color: var(--gold);
 }
 
-/* Экран результатов */
+/* Экраны */
 .screen {
   padding: 16px;
+  padding-bottom: 110px;
 }
 
 .screen.hidden {
