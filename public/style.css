@@ -18,10 +18,17 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+}
+
+h1, .header h1, .nearest-card-title, .rating-banner-title,
+.home-card-title, .rules-card-title, .about-title,
+.game-title, .profile-nickname, .legend-name,
+.section-title, .month-result-title, .rule-section-title {
+  font-family: 'Oswald', sans-serif;
 }
 
 .app {
