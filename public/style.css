@@ -18,17 +18,10 @@
 }
 
 body {
-  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-}
-
-h1, .header h1, .nearest-card-title, .rating-banner-title,
-.home-card-title, .rules-card-title, .about-title,
-.game-title, .profile-nickname, .legend-name,
-.section-title, .month-result-title, .rule-section-title {
-  font-family: 'Oswald', sans-serif;
 }
 
 .app {
@@ -363,7 +356,7 @@ h1, .header h1, .nearest-card-title, .rating-banner-title,
 
 /* Баннер рейтинга */
 .rating-banner {
-  background: linear-gradient(135deg, #c9a227, #7a5c0a);
+  background: linear-gradient(135deg, #b8860b, #4a3500);
   border-radius: 16px;
   padding: 18px 16px;
   margin-bottom: 14px;
@@ -380,16 +373,16 @@ h1, .header h1, .nearest-card-title, .rating-banner-title,
   font-weight: 900;
   font-style: italic;
   text-transform: uppercase;
-  color: #0a0a0a;
+  color: #f0c040;
   line-height: 1.15;
   margin-bottom: 12px;
 }
 
 .rating-banner-btn {
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(0,0,0,0.25);
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(240,192,64,0.4);
   border-radius: 20px;
-  color: #0a0a0a;
+  color: #f0c040;
   padding: 7px 14px;
   font-size: 13px;
   font-weight: 600;
