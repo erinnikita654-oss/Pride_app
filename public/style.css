@@ -5,18 +5,16 @@
 }
 
 :root {
-  --bg: #080808;
-  --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card2: rgba(255, 255, 255, 0.1);
+  --bg: #0a0a0a;
+  --bg-card: #141414;
+  --bg-card2: #1a1a1a;
   --gold: #c9a227;
   --gold-light: #f0c040;
   --gold-dim: rgba(201, 162, 39, 0.15);
-  --gold-border: rgba(201, 162, 39, 0.2);
+  --gold-border: rgba(201, 162, 39, 0.25);
   --text: #f0e6c8;
-  --hint: #9a8a6a;
+  --hint: #7a6a4a;
   --danger: #c0392b;
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --blur: blur(16px);
 }
 
 body {
@@ -24,28 +22,6 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* Абстрактный фон */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse 60% 40% at 20% 20%, rgba(201, 162, 39, 0.18) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 50% at 80% 10%, rgba(120, 60, 200, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 70% 40% at 50% 80%, rgba(201, 162, 39, 0.1) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 60% at 90% 70%, rgba(80, 40, 160, 0.1) 0%, transparent 60%),
-    #080808;
-  pointer-events: none;
-}
-
-.app, .bottom-nav, #screen-nickname, #toast {
-  position: relative;
-  z-index: 1;
 }
 
 .app {
@@ -56,14 +32,12 @@ body::before {
 
 /* Шапка */
 .header {
-  background: rgba(8, 8, 8, 0.7);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
   padding: 16px;
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--gold-border);
 }
 
 .header-logo {
@@ -132,14 +106,6 @@ body::before {
 }
 
 
-/* Стеклянный эффект для всех карточек */
-.game-card, .past-game-card, .rating-item, .legend-item,
-.stat-card, .overall-card, .month-result-card, .rules-card,
-.home-card, .nearest-card, .player-card, .profile-avatar {
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-}
-
 /* Нижняя навигация */
 .bottom-nav {
   position: fixed;
@@ -155,9 +121,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background: rgba(15, 15, 15, 0.8);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
+  background: #1c1c1c;
   border-radius: 50px;
   padding: 8px;
   gap: 4px;
@@ -230,11 +194,9 @@ body::before {
 /* Карточка игры */
 .game-card {
   background: var(--bg-card);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-radius: 14px;
   padding: 16px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--gold-border);
 }
 
 .game-title {
