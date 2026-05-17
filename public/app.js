@@ -11,18 +11,19 @@ let myRegistrations = new Set();
 
 // --- Навигация ---
 
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    const target = tab.dataset.tab;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    hideAllScreens();
-    tab.classList.add('active');
-    document.getElementById(`tab-${target}`).classList.add('active');
-    if (target === 'rating') loadRating();
-    if (target === 'legends') loadLegends();
-    if (target === 'players') loadAllPlayers();
-  });
+function switchTab(target) {
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  hideAllScreens();
+  document.querySelector(`.nav-item[data-tab="${target}"]`).classList.add('active');
+  document.getElementById(`tab-${target}`).classList.add('active');
+  if (target === 'rating') loadRating();
+  if (target === 'legends') loadLegends();
+  if (target === 'players') loadAllPlayers();
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => switchTab(item.dataset.tab));
 });
 
 // --- Все прошедшие игры ---
@@ -38,7 +39,7 @@ document.getElementById('btn-all-games').addEventListener('click', () => {
 
 document.getElementById('all-games-back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.querySelectorAll('.tab').forEach(t =>
+  document.querySelectorAll('.nav-item').forEach(t =>
     t.classList.toggle('active', t.dataset.tab === 'games')
   );
   document.getElementById('tab-games').classList.add('active');
@@ -419,7 +420,7 @@ async function openPlayerStats(nickname, month) {
 
 document.getElementById('player-back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'rating'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'rating'));
   document.getElementById('tab-rating').classList.add('active');
 });
 
@@ -439,7 +440,7 @@ document.getElementById('players-search').addEventListener('input', e => {
 
 document.getElementById('player-overall-back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'players'));
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'players'));
   document.getElementById('tab-players').classList.add('active');
 });
 

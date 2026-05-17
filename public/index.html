@@ -15,12 +15,6 @@
         <h1>Pride</h1>
         <button id="profile-btn" class="profile-btn" title="Мой профиль">👤</button>
       </div>
-      <nav class="tabs">
-        <button class="tab active" data-tab="games">Игры</button>
-        <button class="tab" data-tab="rating">Рейтинг</button>
-        <button class="tab" data-tab="legends">Легенды</button>
-        <button class="tab" data-tab="players">Игроки</button>
-      </nav>
     </header>
 
     <main>
@@ -156,6 +150,28 @@
       <button id="nickname-cancel" class="btn" style="margin-top:8px;background:transparent;color:var(--hint)">Отмена</button>
     </div>
   </div>
+
+  <!-- Нижняя навигация -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="nav-item active" data-tab="games">
+        <span class="nav-icon">🃏</span>
+        <span class="nav-label">Игры</span>
+      </button>
+      <button class="nav-item" data-tab="rating">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Рейтинг</span>
+      </button>
+      <button class="nav-item" data-tab="legends">
+        <span class="nav-icon">⭐</span>
+        <span class="nav-label">Легенды</span>
+      </button>
+      <button class="nav-item" data-tab="players">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Игроки</span>
+      </button>
+    </div>
+  </nav>
 
   <div id="toast" class="toast"></div>
 
