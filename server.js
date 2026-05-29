@@ -38,11 +38,21 @@ const SHEETS = {
 };
 const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=';
 
+const MONTH_NAMES = {
+  may: 'Май 2026', april: 'Апрель 2026', march: 'Март 2026',
+  february2026: 'Февраль 2026', january2026: 'Январь 2026',
+  december2025: 'Декабрь 2025', november2025: 'Ноябрь 2025',
+  october2025: 'Октябрь 2025', september2025: 'Сентябрь 2025',
+  august2025: 'Август 2025', july2025: 'Июль 2025',
+  june2025: 'Июнь 2025', may2025: 'Май 2025', april2025: 'Апрель 2025',
+};
+const MONTH_ORDER = ['may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
+
 const normalize = s => (s || '').trim().toLowerCase();
 
 // Кэш листов: { gid -> { lines, ts } }
 const sheetCache = {};
-const CACHE_TTL = 60_000; // 60 секунд
+const CACHE_TTL = 300_000; // 5 минут
 
 async function fetchSheetLines(gid) {
   const cached = sheetCache[gid];
@@ -320,16 +330,7 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Не найден' });
 
   const nickname = user.first_name || '';
-  const monthNames = {
-    may: 'Май 2026', april: 'Апрель 2026', march: 'Март 2026',
-    february2026: 'Февраль 2026', january2026: 'Январь 2026',
-    december2025: 'Декабрь 2025', november2025: 'Ноябрь 2025',
-    october2025: 'Октябрь 2025', september2025: 'Сентябрь 2025',
-    august2025: 'Август 2025', july2025: 'Июль 2025',
-    june2025: 'Июнь 2025', may2025: 'Май 2025', april2025: 'Апрель 2025',
-  };
   const months = [];
-
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
   for (const [key, gid] of Object.entries(SHEETS)) {
@@ -368,13 +369,11 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
       if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
       totalWins += wins;
 
-      months.push({ key, label: monthNames[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
+      months.push({ key, label: MONTH_NAMES[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
     } catch (e) {}
   }
 
-  const order = ['may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
-  months.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
-
+  months.sort((a, b) => MONTH_ORDER.indexOf(a.key) - MONTH_ORDER.indexOf(b.key));
   res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
 });
 
@@ -411,15 +410,6 @@ app.get('/api/player-overall', async (req, res) => {
   const { nickname } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
-  const monthNames = {
-    may: 'Май 2026', april: 'Апрель 2026', march: 'Март 2026',
-    february2026: 'Февраль 2026', january2026: 'Январь 2026',
-    december2025: 'Декабрь 2025', november2025: 'Ноябрь 2025',
-    october2025: 'Октябрь 2025', september2025: 'Сентябрь 2025',
-    august2025: 'Август 2025', july2025: 'Июль 2025',
-    june2025: 'Июнь 2025', may2025: 'Май 2025', april2025: 'Апрель 2025',
-  };
-  const order = ['may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
   const months = [];
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
@@ -458,13 +448,12 @@ app.get('/api/player-overall', async (req, res) => {
       if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
       totalWins += wins;
 
-      months.push({ key, label: monthNames[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
+      months.push({ key, label: MONTH_NAMES[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
     } catch (e) {}
   }
 
-  months.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+  months.sort((a, b) => MONTH_ORDER.indexOf(a.key) - MONTH_ORDER.indexOf(b.key));
   res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
-
 });
 
 // Легенды клуба — топ-10 по количеству первых мест за всё время
@@ -511,8 +500,9 @@ app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
 
+  const gid = SHEETS[req.query.month] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(SHEETS.may);
+    const lines = await fetchSheetLines(gid);
     const { nameIdx } = detectSheetStructure(lines);
 
     const players = lines.slice(2)

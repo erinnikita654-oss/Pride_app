@@ -75,7 +75,7 @@ async function loadAllGames() {
 
     container.querySelectorAll('.past-game-card').forEach(card => {
       card.addEventListener('click', () => {
-        openGameResults(card.dataset.col, card.dataset.label, 'all-games');
+        openGameResults(card.dataset.col, card.dataset.label, 'all-games', allGamesMonth);
       });
     });
   } catch (e) {
@@ -320,7 +320,7 @@ async function loadPastGames() {
 let gameResultsFrom = 'games';
 let playerOverallFrom = 'players';
 
-async function openGameResults(colIndex, label, from = 'games') {
+async function openGameResults(colIndex, label, from = 'games', month = 'may') {
   gameResultsFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -331,7 +331,7 @@ async function openGameResults(colIndex, label, from = 'games') {
   container.innerHTML = '<div class="loading">Загрузка...</div>';
 
   try {
-    const res = await fetch(`/api/game-results?col=${colIndex}`);
+    const res = await fetch(`/api/game-results?col=${colIndex}&month=${month}`);
     const players = await res.json();
 
     if (!players.length) {
@@ -471,7 +471,7 @@ async function openPlayerStats(nickname, month) {
       <div class="section-title" style="margin-bottom:10px">Результаты по играм</div>
       <div class="list">
         ${s.games.map(g => `
-          <div class="past-game-card" data-col="${g.idx}" data-label="${g.label}">
+          <div class="past-game-card" data-col="${g.idx}" data-label="${g.label}" data-month="${month}">
             <div>
               <div class="past-game-date">🗓 ${g.label}</div>
               <div style="font-size:12px;color:var(--hint);margin-top:2px">${g.place} место из ${g.total}</div>
@@ -485,7 +485,7 @@ async function openPlayerStats(nickname, month) {
 
     document.getElementById('player-games').querySelectorAll('.past-game-card').forEach(card => {
       card.addEventListener('click', () => {
-        openGameResults(card.dataset.col, card.dataset.label, 'player');
+        openGameResults(card.dataset.col, card.dataset.label, 'player', card.dataset.month);
       });
     });
   } catch (e) {
