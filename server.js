@@ -50,6 +50,15 @@ const MONTH_ORDER = ['may', 'april', 'march', 'february2026', 'january2026', 'de
 
 const normalize = s => (s || '').trim().toLowerCase();
 
+const ALIASES = {
+  'prosto khorosh': 'XR',
+};
+
+function resolveName(name) {
+  const n = (name || '').trim();
+  return ALIASES[normalize(n)] || n;
+}
+
 // Кэш листов: { gid -> { lines, ts } }
 const sheetCache = {};
 const CACHE_TTL = 300_000; // 5 минут
@@ -205,7 +214,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
     const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
-    const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
+    const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
 
     if (playerRow) {
       monthPoints = parseInt(playerRow[totalIdx]) || 0;
@@ -217,7 +226,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
     }
 
     const ranked = dataRows
-      .map(cols => ({ name: cols[nameIdx], pts: parseInt(cols[totalIdx]) || 0 }))
+      .map(cols => ({ name: resolveName(cols[nameIdx]), pts: parseInt(cols[totalIdx]) || 0 }))
       .filter(p => p.name && p.pts > 0)
       .sort((a, b) => b.pts - a.pts);
 
@@ -237,7 +246,7 @@ app.get('/api/rating', async (req, res) => {
     const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
     const players = lines.slice(2)
-      .map(cols => ({ first_name: cols[nameIdx] || '', rating: parseInt(cols[totalIdx]) || 0 }))
+      .map(cols => ({ first_name: resolveName(cols[nameIdx]), rating: parseInt(cols[totalIdx]) || 0 }))
       .filter(p => p.first_name !== '' && p.rating > 0)
       .sort((a, b) => b.rating - a.rating)
       .map((p, i) => ({ ...p, place: i + 1 }));
@@ -258,7 +267,7 @@ app.get('/api/player-stats', async (req, res) => {
     const { nameIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
-    const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
+    const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
     if (!playerRow) return res.json({ found: false });
 
     let totalPoints = 0, gamesPlayed = 0, bestPoints = 0, bestPlace = null;
@@ -339,7 +348,7 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
       const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
-      const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
+      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
       if (!playerRow) continue;
 
       const monthTotal = parseInt(playerRow[totalIdx]) || 0;
@@ -387,7 +396,7 @@ app.get('/api/all-players', async (req, res) => {
       const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
       lines.slice(2).forEach(cols => {
-        const name = (cols[nameIdx] || '').trim();
+        const name = resolveName(cols[nameIdx]);
         const pts  = parseInt(cols[totalIdx]) || 0;
         if (!name || pts === 0) return;
         if (!playerMap[name]) playerMap[name] = { name, totalPoints: 0, months: 0 };
@@ -419,7 +428,7 @@ app.get('/api/player-overall', async (req, res) => {
       const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
-      const playerRow = dataRows.find(cols => normalize(cols[nameIdx]) === normalize(nickname));
+      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
       if (!playerRow) continue;
 
       const monthTotal = parseInt(playerRow[totalIdx]) || 0;
@@ -469,7 +478,7 @@ app.get('/api/legends', async (req, res) => {
       for (const { idx } of dateCols) {
         // Найти максимальный результат в этой игре
         const scores = dataRows.map(cols => ({
-          name: (cols[nameIdx] || '').trim(),
+          name: resolveName(cols[nameIdx]),
           pts: parseInt(cols[idx]) || 0,
         })).filter(p => p.name && p.pts > 0);
 
@@ -506,7 +515,7 @@ app.get('/api/game-results', async (req, res) => {
     const { nameIdx } = detectSheetStructure(lines);
 
     const players = lines.slice(2)
-      .map(cols => ({ first_name: cols[nameIdx] || '', rating: parseInt(cols[colIndex]) || 0 }))
+      .map(cols => ({ first_name: resolveName(cols[nameIdx]), rating: parseInt(cols[colIndex]) || 0 }))
       .filter(p => p.first_name !== '' && p.rating > 0)
       .sort((a, b) => b.rating - a.rating)
       .map((p, i) => ({ ...p, place: i + 1 }));
