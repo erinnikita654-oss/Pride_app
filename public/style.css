@@ -997,7 +997,8 @@ body::before {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 24px;
   padding: 16px 0 20px;
   border-bottom: 1px solid var(--gold-border);
   margin-bottom: 20px;
