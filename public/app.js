@@ -571,6 +571,7 @@ async function openPlayerOverall(nickname, from = 'players') {
 
   document.getElementById('overall-avatar').textContent = (nickname || '?')[0].toUpperCase();
   document.getElementById('overall-nickname').textContent = nickname;
+  document.getElementById('overall-header-stats').innerHTML = '';
 
   const container = document.getElementById('overall-content');
   container.innerHTML = '<div class="loading">Загрузка...</div>';
@@ -583,6 +584,16 @@ async function openPlayerOverall(nickname, from = 'players') {
       container.innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>Нет данных</p></div>`;
       return;
     }
+
+    document.getElementById('overall-header-stats').innerHTML = `
+      <div class="overall-header-stat">
+        <div class="overall-header-stat-value">${d.totalGames}</div>
+        <div class="overall-header-stat-label">игр</div>
+      </div>
+      <div class="overall-header-stat">
+        <div class="overall-header-stat-value">${d.totalWins}</div>
+        <div class="overall-header-stat-label">побед</div>
+      </div>`;
 
     const winsWord = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
     const bp = d.allBestPlace ? `${d.allBestPlace} место` : '—';

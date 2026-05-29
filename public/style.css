@@ -992,6 +992,56 @@ body::before {
   letter-spacing: 0.5px;
 }
 
+/* Шапка экрана игрока с статистикой слева */
+.player-overall-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--gold-border);
+  margin-bottom: 20px;
+}
+
+.overall-header-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 70px;
+}
+
+.overall-header-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.overall-header-stat-value {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.overall-header-stat-label {
+  font-size: 11px;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+.overall-header-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.overall-header-identity .profile-avatar {
+  margin-bottom: 0;
+}
+
 /* Экран профиля */
 .profile-header {
   display: flex;
