@@ -585,6 +585,8 @@ async function openPlayerOverall(nickname, from = 'players') {
       return;
     }
 
+    const avgPts = d.totalGames > 0 ? Math.round(d.totalPoints / d.totalGames) : 0;
+    const winPct = d.totalGames > 0 ? Math.round(d.totalWins / d.totalGames * 100) : 0;
     document.getElementById('overall-header-stats').innerHTML = `
       <div class="overall-header-stat">
         <div class="overall-header-stat-value">${d.totalGames}</div>
@@ -593,6 +595,14 @@ async function openPlayerOverall(nickname, from = 'players') {
       <div class="overall-header-stat">
         <div class="overall-header-stat-value">${d.totalWins}</div>
         <div class="overall-header-stat-label">побед</div>
+      </div>
+      <div class="overall-header-stat">
+        <div class="overall-header-stat-value">${avgPts}</div>
+        <div class="overall-header-stat-label">avg очки</div>
+      </div>
+      <div class="overall-header-stat">
+        <div class="overall-header-stat-value">${winPct}%</div>
+        <div class="overall-header-stat-label">% побед</div>
       </div>`;
 
     const winsWord = n => n === 1 ? 'победа' : n < 5 ? 'победы' : 'побед';
