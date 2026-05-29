@@ -49,13 +49,9 @@ document.getElementById('all-games-back-btn').addEventListener('click', () => {
   document.getElementById('tab-games').classList.add('active');
 });
 
-document.querySelectorAll('.ag-month-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.ag-month-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    allGamesMonth = btn.dataset.month;
-    loadAllGames();
-  });
+document.getElementById('all-games-month-select').addEventListener('change', e => {
+  allGamesMonth = e.target.value;
+  loadAllGames();
 });
 
 async function loadAllGames() {
@@ -367,12 +363,8 @@ async function openGameResults(colIndex, label, from = 'games') {
 let currentMonth = 'may';
 let allPlayers = [];
 
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.month-btn');
-  if (!btn) return;
-  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentMonth = btn.dataset.month;
+document.getElementById('rating-month-select').addEventListener('change', e => {
+  currentMonth = e.target.value;
   document.getElementById('rating-search').value = '';
   loadRating();
 });
