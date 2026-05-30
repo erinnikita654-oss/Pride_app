@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import { google } from 'googleapis';
 
 dotenv.config();
 
@@ -20,23 +21,30 @@ const supabase = createClient(
 
 // --- Google Sheets ---
 
+const OLD_SPREADSHEET_ID = '1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0';
+
 const SHEETS = {
-  may:           '675526994',
-  april:         '321291646',
-  march:         '118856136',
-  february2026:  '305465181',
-  january2026:   '428800634',
-  december2025:  '1294058741',
-  november2025:  '1988320718',
-  october2025:   '1379545018',
-  september2025: '1793837804',
-  august2025:    '679730074',
-  july2025:      '27800889',
-  june2025:      '1130704950',
-  may2025:       '276254797',
-  april2025:     '417165698',
+  may:           { id: OLD_SPREADSHEET_ID, gid: '675526994' },
+  april:         { id: OLD_SPREADSHEET_ID, gid: '321291646' },
+  march:         { id: OLD_SPREADSHEET_ID, gid: '118856136' },
+  february2026:  { id: OLD_SPREADSHEET_ID, gid: '305465181' },
+  january2026:   { id: OLD_SPREADSHEET_ID, gid: '428800634' },
+  december2025:  { id: OLD_SPREADSHEET_ID, gid: '1294058741' },
+  november2025:  { id: OLD_SPREADSHEET_ID, gid: '1988320718' },
+  october2025:   { id: OLD_SPREADSHEET_ID, gid: '1379545018' },
+  september2025: { id: OLD_SPREADSHEET_ID, gid: '1793837804' },
+  august2025:    { id: OLD_SPREADSHEET_ID, gid: '679730074' },
+  july2025:      { id: OLD_SPREADSHEET_ID, gid: '27800889' },
+  june2025:      { id: OLD_SPREADSHEET_ID, gid: '1130704950' },
+  may2025:       { id: OLD_SPREADSHEET_ID, gid: '276254797' },
+  april2025:     { id: OLD_SPREADSHEET_ID, gid: '417165698' },
 };
-const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0/export?format=csv&gid=';
+
+const sheetsAuth = new google.auth.GoogleAuth({
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+});
+const sheetsApi = google.sheets({ version: 'v4', auth: sheetsAuth });
 
 const MONTH_NAMES = {
   may: 'Май 2026', april: 'Апрель 2026', march: 'Март 2026',
@@ -59,21 +67,39 @@ function resolveName(name) {
   return ALIASES[normalize(n)] || n;
 }
 
-// Кэш листов: { gid -> { lines, ts } }
+// Кэш листов: { "spreadsheetId:gid" -> { lines, ts } }
 const sheetCache = {};
 const CACHE_TTL = 300_000; // 5 минут
 
-async function fetchSheetLines(gid) {
-  const cached = sheetCache[gid];
+// Кэш названий листов: { spreadsheetId -> { gid -> title } }
+const sheetTitleCache = {};
+
+async function getSheetTitle(spreadsheetId, gid) {
+  if (!sheetTitleCache[spreadsheetId]) {
+    const meta = await sheetsApi.spreadsheets.get({ spreadsheetId });
+    sheetTitleCache[spreadsheetId] = {};
+    for (const sheet of meta.data.sheets) {
+      sheetTitleCache[spreadsheetId][sheet.properties.sheetId.toString()] = sheet.properties.title;
+    }
+  }
+  return sheetTitleCache[spreadsheetId][gid];
+}
+
+async function fetchSheetLines(spreadsheetId, gid) {
+  const cacheKey = `${spreadsheetId}:${gid}`;
+  const cached = sheetCache[cacheKey];
   if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.lines;
 
-  const response = await fetch(SHEET_BASE + gid);
-  if (!response.ok) throw new Error('Ошибка загрузки таблицы');
-  const csv = await response.text();
-  const lines = csv.trim().split('\n').map(line =>
-    line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+  const title = await getSheetTitle(spreadsheetId, gid);
+  const response = await sheetsApi.spreadsheets.values.get({
+    spreadsheetId,
+    range: title,
+  });
+
+  const lines = (response.data.values || []).map(row =>
+    row.map(c => (c || '').toString().trim())
   );
-  sheetCache[gid] = { lines, ts: Date.now() };
+  sheetCache[cacheKey] = { lines, ts: Date.now() };
   return lines;
 }
 
@@ -210,7 +236,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
   let monthPoints = 0, gamesPlayed = 0, bestGame = 0, rank = null, foundInSheet = false;
 
   try {
-    const lines = await fetchSheetLines(SHEETS.may);
+    const lines = await fetchSheetLines(SHEETS.may.id, SHEETS.may.gid);
     const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
@@ -240,9 +266,9 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
 // --- Рейтинг (Google Sheets) ---
 
 app.get('/api/rating', async (req, res) => {
-  const gid = SHEETS[req.query.month] || SHEETS.may;
+  const sheet = SHEETS[req.query.month] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(gid);
+    const lines = await fetchSheetLines(sheet.id, sheet.gid);
     const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
     const players = lines.slice(2)
@@ -261,9 +287,9 @@ app.get('/api/player-stats', async (req, res) => {
   const { nickname, month } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
-  const gid = SHEETS[month] || SHEETS.may;
+  const sheet = SHEETS[month] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(gid);
+    const lines = await fetchSheetLines(sheet.id, sheet.gid);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
@@ -300,7 +326,7 @@ app.get('/api/player-stats', async (req, res) => {
 
 app.get('/api/past-games', async (req, res) => {
   try {
-    const lines = await fetchSheetLines(SHEETS.may);
+    const lines = await fetchSheetLines(SHEETS.may.id, SHEETS.may.gid);
     const { dateCols } = detectSheetStructure(lines);
 
     const withData = dateCols
@@ -315,9 +341,9 @@ app.get('/api/past-games', async (req, res) => {
 
 // Все прошедшие игры за выбранный месяц
 app.get('/api/all-past-games', async (req, res) => {
-  const gid = SHEETS[req.query.month] || SHEETS.may;
+  const sheet = SHEETS[req.query.month] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(gid);
+    const lines = await fetchSheetLines(sheet.id, sheet.gid);
     const { dateCols } = detectSheetStructure(lines);
 
     const withData = dateCols
@@ -342,9 +368,9 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
   const months = [];
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
-  for (const [key, gid] of Object.entries(SHEETS)) {
+  for (const [key, sheet] of Object.entries(SHEETS)) {
     try {
-      const lines = await fetchSheetLines(gid);
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
@@ -391,8 +417,8 @@ app.get('/api/all-players', async (req, res) => {
   try {
     const playerMap = {};
 
-    for (const [key, gid] of Object.entries(SHEETS)) {
-      const lines = await fetchSheetLines(gid);
+    for (const [key, sheet] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
       lines.slice(2).forEach(cols => {
@@ -422,9 +448,9 @@ app.get('/api/player-overall', async (req, res) => {
   const months = [];
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
-  for (const [key, gid] of Object.entries(SHEETS)) {
+  for (const [key, sheet] of Object.entries(SHEETS)) {
     try {
-      const lines = await fetchSheetLines(gid);
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
@@ -470,8 +496,8 @@ app.get('/api/legends', async (req, res) => {
   try {
     const wins = {};
 
-    for (const gid of Object.values(SHEETS)) {
-      const lines = await fetchSheetLines(gid);
+    for (const sheet of Object.values(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
@@ -509,9 +535,9 @@ app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
 
-  const gid = SHEETS[req.query.month] || SHEETS.may;
+  const sheet = SHEETS[req.query.month] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(gid);
+    const lines = await fetchSheetLines(sheet.id, sheet.gid);
     const { nameIdx } = detectSheetStructure(lines);
 
     const players = lines.slice(2)
