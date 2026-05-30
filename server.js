@@ -41,7 +41,7 @@ const SHEETS = {
 };
 
 const sheetsAuth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY),
+  credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_KEY || '{}'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 const sheetsApi = google.sheets({ version: 'v4', auth: sheetsAuth });
