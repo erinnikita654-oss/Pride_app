@@ -7,6 +7,23 @@ const telegramId = user?.id || null;
 const username = user?.username || '';
 const firstName = user?.first_name || 'Игрок';
 
+// --- Аналитика ---
+function track(event, props = {}) {
+  try { window.posthog?.capture(event, props); } catch (e) {}
+}
+
+if (telegramId) {
+  try {
+    window.posthog?.identify(String(telegramId), {
+      username,
+      first_name: firstName,
+      platform: 'telegram',
+    });
+  } catch (e) {}
+}
+
+track('app_opened', { platform: telegramId ? 'telegram' : 'web' });
+
 // Веб-версия: ник хранится в localStorage
 const isWeb = !telegramId;
 const WEB_NICKNAME_KEY = 'pride_nickname';
@@ -21,6 +38,7 @@ function switchTab(target) {
   hideAllScreens();
   document.querySelector(`.nav-item[data-tab="${target}"]`).classList.add('active');
   document.getElementById(`tab-${target}`).classList.add('active');
+  track('tab_view', { tab: target });
   if (target === 'rating') loadRating();
   if (target === 'legends') loadLegends();
   if (target === 'players') loadAllPlayers();
@@ -254,6 +272,7 @@ let gameResultsFrom = 'games';
 let playerOverallFrom = 'players';
 
 async function openGameResults(colIndex, label, from = 'games', month = 'may') {
+  track('game_results_view', { label, month, from });
   gameResultsFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -366,6 +385,7 @@ function renderRating(players) {
 }
 
 async function openPlayerStats(nickname, month) {
+  track('player_stats_view', { month });
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   const screen = document.getElementById('screen-player');
@@ -472,6 +492,7 @@ document.getElementById('open-progress-btn').addEventListener('click', () => {
 });
 
 async function openProgressChart(nickname, from = 'overall') {
+  track('progress_chart_view', { from });
   progressFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -667,6 +688,7 @@ function renderPlayersList(players) {
 }
 
 async function openPlayerOverall(nickname, from = 'players') {
+  track('player_overall_view', { from });
   playerOverallFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -836,6 +858,7 @@ document.getElementById('my-tournaments-back-btn').addEventListener('click', () 
 });
 
 async function openMyTournaments() {
+  track('my_tournaments_view');
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-my-tournaments').classList.remove('hidden');
@@ -985,6 +1008,7 @@ function hideAllScreens() {
 }
 
 async function openProfile() {
+  track('profile_view');
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-profile').classList.remove('hidden');
