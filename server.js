@@ -567,4 +567,18 @@ app.get('/api/game-results', async (req, res) => {
   }
 });
 
+app.get('/api/test-new-sheet', async (req, res) => {
+  const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
+  try {
+    const meta = await sheetsApi.spreadsheets.get({ spreadsheetId: NEW_ID });
+    const sheets = meta.data.sheets.map(s => ({
+      title: s.properties.title,
+      gid: s.properties.sheetId,
+    }));
+    res.json({ ok: true, sheets });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
