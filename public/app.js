@@ -492,7 +492,15 @@ async function openProgressChart(nickname, from = 'overall') {
     const labels = ordered.map(m => m.label);
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
-    const avg    = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
+    const avg = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
+
+    // Накопительное среднее: суммарные очки / суммарные игры до каждого месяца
+    let cumPoints = 0, cumGames = 0;
+    const cumulativeAvg = ordered.map(m => {
+      cumPoints += m.monthTotal;
+      cumGames  += m.gamesPlayed;
+      return cumGames > 0 ? Math.round(cumPoints / cumGames) : 0;
+    });
 
     const ctx = document.getElementById('progress-chart').getContext('2d');
     progressChartInstance = new Chart(ctx, {
@@ -559,17 +567,31 @@ async function openProgressChart(nickname, from = 'overall') {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          label: 'Среднее очков за игру',
-          data: avg,
-          borderColor: '#2ecc71',
-          backgroundColor: 'rgba(46,204,113,0.15)',
-          borderWidth: 2,
-          pointBackgroundColor: '#2ecc71',
-          pointRadius: 5,
-          tension: 0.3,
-          fill: true,
-        }],
+        datasets: [
+          {
+            label: 'Среднее за месяц',
+            data: avg,
+            borderColor: '#2ecc71',
+            backgroundColor: 'rgba(46,204,113,0.15)',
+            borderWidth: 2,
+            pointBackgroundColor: '#2ecc71',
+            pointRadius: 5,
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: 'Общее среднее',
+            data: cumulativeAvg,
+            borderColor: '#9b59b6',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 3],
+            pointBackgroundColor: '#9b59b6',
+            pointRadius: 3,
+            tension: 0.3,
+            fill: false,
+          },
+        ],
       },
       options: {
         responsive: true,
