@@ -145,18 +145,14 @@ async function openClubStats() {
     container.innerHTML = `
       <div class="club-stats-grid">
         <div class="club-stat-card">
-          <div class="club-stat-value">${d.totalTournaments}</div>
+          <div class="club-stat-value">${d.totalGames}</div>
           <div class="club-stat-label">Турниров проведено</div>
         </div>
         <div class="club-stat-card">
           <div class="club-stat-value">${d.totalPlayers}</div>
           <div class="club-stat-label">Игроков в клубе</div>
         </div>
-        <div class="club-stat-card">
-          <div class="club-stat-value">${d.totalGames}</div>
-          <div class="club-stat-label">Игровых дней</div>
-        </div>
-        <div class="club-stat-card">
+        <div class="club-stat-card" style="grid-column: 1 / -1">
           <div class="club-stat-value">${d.totalParticipations}</div>
           <div class="club-stat-label">Участий в турнирах</div>
         </div>
