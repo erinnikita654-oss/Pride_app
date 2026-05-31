@@ -9,7 +9,7 @@ import Rollbar from 'rollbar';
 dotenv.config();
 
 const rollbar = new Rollbar({
-  accessToken: '1cb9c9cc2092955d20440a25e08397ab',
+  accessToken: '7e0282d8ad5b448fbdf25c0e7455e8a2',
   captureUncaught: true,
   captureUnhandledRejections: true,
   environment: 'production',

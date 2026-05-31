@@ -19,6 +19,7 @@ if (telegramId) {
       first_name: firstName,
       platform: 'telegram',
     });
+    window.Rollbar?.configure({ payload: { person: { id: String(telegramId), username } } });
   } catch (e) {}
 }
 
