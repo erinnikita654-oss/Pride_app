@@ -1126,6 +1126,30 @@ body::before {
   opacity: 0.9;
 }
 
+.progress-chart-wrap {
+  position: relative;
+  width: 100%;
+  padding: 16px 0;
+}
+
+.progress-btn {
+  width: 100%;
+  padding: 10px;
+  margin: 12px 0 4px;
+  background: transparent;
+  border: 1px solid var(--gold-border);
+  border-radius: 10px;
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.progress-btn:hover {
+  background: rgba(201,162,39,0.1);
+}
+
 .past-game-tournament {
   font-size: 12px;
   color: var(--hint);

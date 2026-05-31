@@ -291,6 +291,15 @@
         </div>
       </section>
 
+      <!-- Экран графика прогресса -->
+      <section id="screen-progress" class="screen hidden">
+        <button class="back-btn" id="progress-back-btn">← Назад</button>
+        <div class="section-title" id="progress-title" style="margin-bottom:16px"></div>
+        <div class="progress-chart-wrap">
+          <canvas id="progress-chart"></canvas>
+        </div>
+      </section>
+
       <!-- Экран общей статистики игрока -->
       <section id="screen-player-overall" class="screen hidden">
         <button class="back-btn" id="player-overall-back-btn">← Назад</button>
@@ -301,6 +310,7 @@
           </div>
           <div class="overall-header-stats" id="overall-header-stats"></div>
         </div>
+        <button class="progress-btn" id="open-progress-btn">📈 График прогресса</button>
         <div id="overall-content">
           <div class="loading">Загрузка...</div>
         </div>
@@ -414,6 +424,7 @@
 
   <div id="toast" class="toast"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

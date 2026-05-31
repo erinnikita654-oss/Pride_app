@@ -396,6 +396,106 @@ document.getElementById('players-search').addEventListener('input', e => {
   renderPlayersList(filtered);
 });
 
+let progressChartInstance = null;
+let currentProgressNickname = null;
+
+document.getElementById('progress-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.getElementById('screen-player-overall').classList.remove('hidden');
+});
+
+document.getElementById('open-progress-btn').addEventListener('click', () => {
+  if (currentProgressNickname) openProgressChart(currentProgressNickname);
+});
+
+async function openProgressChart(nickname) {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-progress').classList.remove('hidden');
+  document.getElementById('progress-title').textContent = `Прогресс — ${nickname}`;
+
+  if (progressChartInstance) {
+    progressChartInstance.destroy();
+    progressChartInstance = null;
+  }
+
+  try {
+    const res = await fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`);
+    const d = await res.json();
+
+    if (!d.months || !d.months.length) return;
+
+    // Сортируем от старых к новым
+    const ordered = [...d.months].reverse();
+    const labels = ordered.map(m => m.label);
+    const points = ordered.map(m => m.monthTotal);
+    const wins   = ordered.map(m => m.wins);
+
+    const ctx = document.getElementById('progress-chart').getContext('2d');
+    progressChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Очки',
+            data: points,
+            borderColor: '#c9a227',
+            backgroundColor: 'rgba(201,162,39,0.15)',
+            borderWidth: 2,
+            pointBackgroundColor: '#c9a227',
+            pointRadius: 5,
+            tension: 0.3,
+            fill: true,
+            yAxisID: 'y',
+          },
+          {
+            label: 'Победы',
+            data: wins,
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231,76,60,0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#e74c3c',
+            pointRadius: 5,
+            tension: 0.3,
+            fill: false,
+            yAxisID: 'y1',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#e0d5c5', font: { size: 13 } },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: '#a89880', font: { size: 10 }, maxRotation: 45 },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#c9a227' },
+            grid: { color: 'rgba(201,162,39,0.1)' },
+            title: { display: true, text: 'Очки', color: '#c9a227' },
+          },
+          y1: {
+            position: 'right',
+            ticks: { color: '#e74c3c', stepSize: 1 },
+            grid: { drawOnChartArea: false },
+            title: { display: true, text: 'Победы', color: '#e74c3c' },
+          },
+        },
+      },
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 document.getElementById('player-overall-back-btn').addEventListener('click', () => {
   hideAllScreens();
   if (playerOverallFrom === 'results') {
@@ -452,6 +552,7 @@ async function openPlayerOverall(nickname, from = 'players') {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-player-overall').classList.remove('hidden');
 
+  currentProgressNickname = nickname;
   document.getElementById('overall-avatar').textContent = (nickname || '?')[0].toUpperCase();
   document.getElementById('overall-nickname').textContent = nickname;
   document.getElementById('overall-header-stats').innerHTML = '';
@@ -758,7 +859,7 @@ async function openMyResults() {
 function hideAllScreens() {
   ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
    'screen-all-games', 'screen-my-results', 'screen-player-overall',
-   'screen-about', 'screen-rules', 'screen-my-tournaments']
+   'screen-about', 'screen-rules', 'screen-my-tournaments', 'screen-progress']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
