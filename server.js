@@ -292,7 +292,7 @@ app.get('/api/rating', async (req, res) => {
 
     const players = lines.slice(2)
       .map(cols => ({ first_name: resolveName(cols[nameIdx]), rating: parseInt(cols[totalIdx]) || 0 }))
-      .filter(p => p.first_name !== '' && p.rating > 0)
+      .filter(p => p.first_name !== '' && p.rating > 0 && !HIDDEN_PLAYERS.has(normalize(p.first_name)))
       .sort((a, b) => b.rating - a.rating)
       .map((p, i) => ({ ...p, place: i + 1 }));
 
@@ -475,7 +475,7 @@ app.get('/api/all-players', async (req, res) => {
       lines.slice(2).forEach(cols => {
         const name = resolveName(cols[nameIdx]);
         const pts  = parseInt(cols[totalIdx]) || 0;
-        if (!name || pts === 0) return;
+        if (!name || pts === 0 || HIDDEN_PLAYERS.has(normalize(name))) return;
         if (!playerMap[name]) playerMap[name] = { name, totalPoints: 0, months: 0 };
         playerMap[name].totalPoints += pts;
         playerMap[name].months++;
@@ -556,6 +556,7 @@ app.get('/api/legends', async (req, res) => {
 
     winnersMap.forEach(winner => {
       const name = resolveName(winner);
+      if (HIDDEN_PLAYERS.has(normalize(name))) return;
       wins[name] = (wins[name] || 0) + 1;
     });
 
@@ -594,7 +595,7 @@ app.get('/api/game-results', async (req, res) => {
 
     const all = lines.slice(2)
       .map(cols => ({ first_name: resolveName(cols[nameIdx]), rating: parseInt(cols[colIndex]) || 0 }))
-      .filter(p => p.first_name !== '' && p.rating > 0)
+      .filter(p => p.first_name !== '' && p.rating > 0 && !HIDDEN_PLAYERS.has(normalize(p.first_name)))
       .sort((a, b) => b.rating - a.rating);
 
     // Победитель — первым, остальные по очкам
@@ -644,6 +645,8 @@ function ruDateToISO(label, year) {
 }
 
 const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА', 'ВЕСЕННЕГО СЕЗОНА'];
+
+const HIDDEN_PLAYERS = new Set(['klu4']);
 const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
 
 let winnersMapCache = null;
@@ -756,6 +759,7 @@ app.get('/api/club-stats', async (req, res) => {
     // Победы по игрокам (из таблицы 2)
     const winsCount = {};
     winnersMap.forEach(winner => {
+      if (HIDDEN_PLAYERS.has(normalize(winner))) return;
       winsCount[winner] = (winsCount[winner] || 0) + 1;
     });
     const champion = Object.entries(winsCount).sort((a, b) => b[1] - a[1])[0];
@@ -773,7 +777,7 @@ app.get('/api/club-stats', async (req, res) => {
 
       dataRows.forEach(cols => {
         const name = resolveName(cols[nameIdx]);
-        if (!name) return;
+        if (!name || HIDDEN_PLAYERS.has(normalize(name))) return;
         for (const { idx } of dateCols) {
           const pts = parseInt(cols[idx]) || 0;
           if (pts > 0) {
