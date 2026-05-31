@@ -571,10 +571,41 @@ app.get('/api/game-results', async (req, res) => {
 app.get('/api/analyze-new-sheet', async (req, res) => {
   const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
   try {
+    // Читаем новую таблицу
     const newLines = await fetchSheetLines(NEW_ID, '0');
+    const dataRows = newLines.slice(1).filter(r => r[0] && r[2]);
+    const newWinners = dataRows.map(r => r[2].trim());
+    const newDates   = dataRows.map(r => r[0].trim());
+
+    // Собираем всех игроков и даты из старых таблиц
+    const oldPlayers = new Set();
+    const oldDates   = new Set();
+
+    for (const sheet of Object.values(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, dateCols } = detectSheetStructure(lines);
+      lines.slice(2).forEach(cols => {
+        const name = resolveName(cols[nameIdx]);
+        if (name) oldPlayers.add(normalize(name));
+      });
+      dateCols.forEach(({ label }) => { if (label) oldDates.add(label.trim()); });
+    }
+
+    // Победители не найденные в старых таблицах
+    const missingWinners = [...new Set(
+      newWinners.filter(w => !oldPlayers.has(normalize(w)))
+    )];
+
+    // Даты из новой таблицы не найденные в старых
+    const missingDates = [...new Set(
+      newDates.filter(d => !oldDates.has(d))
+    )];
+
     res.json({
-      totalRows: newLines.length,
-      first10: newLines.slice(0, 10),
+      totalTournaments: dataRows.length,
+      missingWinners,
+      missingDates,
+      oldDatesSample: [...oldDates].slice(0, 10),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
