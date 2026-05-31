@@ -61,6 +61,7 @@ const normalize = s => (s || '').trim().toLowerCase();
 const ALIASES = {
   'prosto khorosh': 'XR',
   'dranaqueen': 'DramaQueen',
+  'нагибатор 2000': 'Нагибатор2000',
 };
 
 function resolveName(name) {
