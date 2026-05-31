@@ -568,45 +568,59 @@ app.get('/api/game-results', async (req, res) => {
 });
 
 
+const SHEET_YEAR = {
+  may: 2026, april: 2026, march: 2026,
+  february2026: 2026, january2026: 2026,
+  december2025: 2025, november2025: 2025, october2025: 2025,
+  september2025: 2025, august2025: 2025, july2025: 2025,
+  june2025: 2025, may2025: 2025, april2025: 2025,
+};
+const RU_MONTHS = { 'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12 };
+
+function ruDateToISO(label, year) {
+  const parts = label.trim().split(' ');
+  if (parts.length < 2) return null;
+  const day = parseInt(parts[0]);
+  const month = RU_MONTHS[parts[1].toLowerCase()];
+  if (!day || !month) return null;
+  return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
+}
+
 app.get('/api/analyze-new-sheet', async (req, res) => {
   const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
   try {
-    // Читаем новую таблицу
     const newLines = await fetchSheetLines(NEW_ID, '0');
     const dataRows = newLines.slice(1).filter(r => r[0] && r[2]);
     const newWinners = dataRows.map(r => r[2].trim());
-    const newDates   = dataRows.map(r => r[0].trim());
+    const newDates   = new Set(dataRows.map(r => r[0].trim()));
 
-    // Собираем всех игроков и даты из старых таблиц
+    // Собираем игроков и даты из старых таблиц
     const oldPlayers = new Set();
     const oldDates   = new Set();
 
-    for (const sheet of Object.values(SHEETS)) {
+    for (const [key, sheet] of Object.entries(SHEETS)) {
       const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, dateCols } = detectSheetStructure(lines);
       lines.slice(2).forEach(cols => {
         const name = resolveName(cols[nameIdx]);
         if (name) oldPlayers.add(normalize(name));
       });
-      dateCols.forEach(({ label }) => { if (label) oldDates.add(label.trim()); });
+      const year = SHEET_YEAR[key];
+      dateCols.forEach(({ label }) => {
+        const iso = ruDateToISO(label, year);
+        if (iso) oldDates.add(iso);
+      });
     }
 
-    // Победители не найденные в старых таблицах
+    // Победители: применяем алиас к именам из новой таблицы
     const missingWinners = [...new Set(
-      newWinners.filter(w => !oldPlayers.has(normalize(w)))
+      newWinners.filter(w => !oldPlayers.has(normalize(resolveName(w))))
     )];
 
-    // Даты из новой таблицы не найденные в старых
-    const missingDates = [...new Set(
-      newDates.filter(d => !oldDates.has(d))
-    )];
+    // Даты не найденные в старых таблицах
+    const missingDates = [...newDates].filter(d => !oldDates.has(d)).sort();
 
-    res.json({
-      totalTournaments: dataRows.length,
-      missingWinners,
-      missingDates,
-      oldDatesSample: [...oldDates].slice(0, 10),
-    });
+    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
