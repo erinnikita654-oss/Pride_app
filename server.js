@@ -640,7 +640,7 @@ app.get('/api/analyze-new-sheet', async (req, res) => {
       if (dateCols.length > 0) dateSamples[key] = dateCols.slice(0, 3).map(d => d.label);
     }
 
-    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates: missingDates.length, dateSamples });
+    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates, dateSamples });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
