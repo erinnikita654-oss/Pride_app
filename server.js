@@ -641,7 +641,10 @@ app.get('/api/analyze-new-sheet', async (req, res) => {
       if (dateCols.length > 0) dateSamples[key] = dateCols.slice(0, 3).map(d => d.label);
     }
 
-    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates, dateSamples });
+    // Строки с несовпадающими датами
+    const missingRows = newLines.slice(1).filter(r => r[0] && missingDates.includes(r[0].trim()));
+
+    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates, missingRows });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
