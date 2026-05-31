@@ -431,8 +431,8 @@ async function openProgressChart(nickname, from = 'overall') {
 
     if (!d.months || !d.months.length) return;
 
-    // Сортируем от старых к новым
-    const ordered = [...d.months].reverse();
+    // Последние 12 месяцев, от старых к новым
+    const ordered = [...d.months].slice(0, 12).reverse();
     const labels = ordered.map(m => m.label);
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
