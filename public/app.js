@@ -567,9 +567,10 @@ async function initAuth() {
   const res = await fetch(`/api/profile/${telegramId}`);
   const profile = await res.json();
 
+  loadPastGames();
+
   if (profile && profile.first_name) {
     clubNickname = profile.first_name;
-    loadPastGames();
   } else {
     document.getElementById('screen-nickname').classList.remove('hidden');
   }
