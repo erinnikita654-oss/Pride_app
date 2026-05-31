@@ -531,32 +531,16 @@ app.get('/api/player-overall', async (req, res) => {
   res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
 });
 
-// Легенды клуба — топ-10 по количеству первых мест за всё время
+// Легенды клуба — топ-15 по количеству побед за всё время (из новой таблицы)
 app.get('/api/legends', async (req, res) => {
   try {
+    const winnersMap = await loadWinnersMap();
     const wins = {};
 
-    for (const sheet of Object.values(SHEETS)) {
-      const lines = await fetchSheetLines(sheet.id, sheet.gid);
-      const { nameIdx, dateCols } = detectSheetStructure(lines);
-      const dataRows = lines.slice(2);
-
-      for (const { idx } of dateCols) {
-        // Найти максимальный результат в этой игре
-        const scores = dataRows.map(cols => ({
-          name: resolveName(cols[nameIdx]),
-          pts: parseInt(cols[idx]) || 0,
-        })).filter(p => p.name && p.pts > 0);
-
-        if (!scores.length) continue;
-
-        const maxPts = Math.max(...scores.map(p => p.pts));
-        // Все кто набрал максимум — получают победу (учитываем ничью)
-        scores.filter(p => p.pts === maxPts).forEach(p => {
-          wins[p.name] = (wins[p.name] || 0) + 1;
-        });
-      }
-    }
+    winnersMap.forEach(winner => {
+      const name = resolveName(winner);
+      wins[name] = (wins[name] || 0) + 1;
+    });
 
     const legends = Object.entries(wins)
       .map(([name, count]) => ({ name, count }))
