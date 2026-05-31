@@ -571,28 +571,10 @@ app.get('/api/game-results', async (req, res) => {
 app.get('/api/analyze-new-sheet', async (req, res) => {
   const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
   try {
-    // Читаем новую таблицу
     const newLines = await fetchSheetLines(NEW_ID, '0');
-
-    // Собираем всех игроков из старых таблиц
-    const oldPlayers = new Set();
-    const oldDates = new Set();
-    for (const sheet of Object.values(SHEETS)) {
-      const lines = await fetchSheetLines(sheet.id, sheet.gid);
-      const { nameIdx, dateCols } = detectSheetStructure(lines);
-      lines.slice(2).forEach(cols => {
-        const name = resolveName(cols[nameIdx]);
-        if (name) oldPlayers.add(normalize(name));
-      });
-      dateCols.forEach(({ label }) => {
-        if (label) oldDates.add(label.trim());
-      });
-    }
-
-    // Анализируем новую таблицу
     res.json({
-      newTableRaw: newLines.slice(0, 5), // первые 5 строк для понимания структуры
       totalRows: newLines.length,
+      first10: newLines.slice(0, 10),
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
