@@ -62,6 +62,7 @@ const ALIASES = {
   'prosto khorosh': 'XR',
   'dranaqueen': 'DramaQueen',
   'нагибатор 2000': 'Нагибатор2000',
+  'алексей б': 'Алексей В',
 };
 
 function resolveName(name) {
