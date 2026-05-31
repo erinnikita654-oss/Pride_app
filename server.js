@@ -604,8 +604,9 @@ app.get('/api/analyze-new-sheet', async (req, res) => {
     const newLines = await fetchSheetLines(NEW_ID, '0');
     const EXCLUDE = ['FINAL OF THE MONTH', 'SEASON TOURNAMENT', 'ЛЕТНЕГО СЕЗОНА'];
     const dataRows = newLines.slice(1).filter(r => r[0] && r[2] && !EXCLUDE.some(e => r[1]?.toUpperCase().includes(e)));
+    const DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
     const newWinners = dataRows.map(r => r[2].trim());
-    const newDates   = new Set(dataRows.map(r => r[0].trim()));
+    const newDates   = new Set(dataRows.map(r => DATE_CORRECTIONS[r[0].trim()] || r[0].trim()));
 
     // Собираем игроков и даты из старых таблиц
     const oldPlayers = new Set();
