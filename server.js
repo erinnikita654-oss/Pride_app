@@ -602,7 +602,7 @@ app.get('/api/analyze-new-sheet', async (req, res) => {
   const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
   try {
     const newLines = await fetchSheetLines(NEW_ID, '0');
-    const dataRows = newLines.slice(1).filter(r => r[0] && r[2]);
+    const dataRows = newLines.slice(1).filter(r => r[0] && r[2] && !r[1]?.toUpperCase().includes('FINAL OF THE MONTH'));
     const newWinners = dataRows.map(r => r[2].trim());
     const newDates   = new Set(dataRows.map(r => r[0].trim()));
 
