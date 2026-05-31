@@ -817,7 +817,7 @@ async function initAuth() {
     if (saved) {
       clubNickname = saved;
     } else {
-      document.getElementById('screen-nickname').classList.remove('hidden');
+      showNicknameScreen();
     }
     loadPastGames();
     return;
@@ -831,12 +831,22 @@ async function initAuth() {
   if (profile && profile.first_name) {
     clubNickname = profile.first_name;
   } else {
-    document.getElementById('screen-nickname').classList.remove('hidden');
+    showNicknameScreen();
   }
 }
 
+function showNicknameScreen() {
+  document.getElementById('screen-nickname').classList.remove('hidden');
+  document.body.classList.add('nickname-active');
+}
+
+function hideNicknameScreen() {
+  document.getElementById('screen-nickname').classList.add('hidden');
+  document.body.classList.remove('nickname-active');
+}
+
 document.getElementById('nickname-cancel').addEventListener('click', () => {
-  if (clubNickname) document.getElementById('screen-nickname').classList.add('hidden');
+  if (clubNickname) hideNicknameScreen();
 });
 
 document.getElementById('profile-btn').addEventListener('click', () => {
@@ -845,7 +855,7 @@ document.getElementById('profile-btn').addEventListener('click', () => {
 
 document.getElementById('profile-edit-btn').addEventListener('click', () => {
   document.getElementById('screen-profile').classList.add('hidden');
-  document.getElementById('screen-nickname').classList.remove('hidden');
+  showNicknameScreen();
   document.getElementById('nickname-input').value = clubNickname || '';
 });
 

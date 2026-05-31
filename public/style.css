@@ -1445,6 +1445,12 @@ body::before {
 
 .nickname-screen.hidden { display: none !important; }
 
+body.nickname-active .app,
+body.nickname-active .bottom-nav,
+body.nickname-active #toast {
+  display: none !important;
+}
+
 .nickname-box {
   width: 100%;
   max-width: 360px;
