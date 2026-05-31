@@ -645,14 +645,5 @@ async function loadWinnersMap() {
   return map;
 }
 
-app.get('/api/debug-winner/:name', async (req, res) => {
-  const winnersMap = await loadWinnersMap();
-  const name = req.params.name.toLowerCase();
-  const rows = [];
-  winnersMap.forEach((winner, date) => {
-    if (winner.toLowerCase().includes(name)) rows.push({ date, winner });
-  });
-  res.json(rows);
-});
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
