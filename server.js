@@ -305,15 +305,20 @@ app.get('/api/player-stats', async (req, res) => {
   const { nickname, month } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
-  const sheet = SHEETS[month] || SHEETS.may;
+  const monthKey = month || 'may';
+  const sheet = SHEETS[monthKey] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(sheet.id, sheet.gid);
+    const [lines, winnersMap] = await Promise.all([
+      fetchSheetLines(sheet.id, sheet.gid),
+      loadWinnersMap(),
+    ]);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
     const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
     if (!playerRow) return res.json({ found: false });
 
+    const year = SHEET_YEAR[monthKey] || 2026;
     let totalPoints = 0, gamesPlayed = 0, bestPoints = 0, bestPlace = null;
     const games = [];
 
@@ -321,12 +326,18 @@ app.get('/api/player-stats', async (req, res) => {
       const pts = parseInt(playerRow[idx]) || 0;
       if (pts === 0) continue;
 
+      const dateISO = ruDateToISO(label, year);
+      const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
+      const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
+
       const dayParticipants = dataRows
         .map(cols => parseInt(cols[idx]) || 0)
         .filter(p => p > 0)
         .sort((a, b) => b - a);
 
-      const place = dayParticipants.indexOf(pts) + 1;
+      const scoreRank = dayParticipants.indexOf(pts) + 1;
+      const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
+
       gamesPlayed++;
       totalPoints += pts;
       if (pts > bestPoints) bestPoints = pts;
@@ -386,6 +397,8 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
   const months = [];
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
+  const winnersMap = await loadWinnersMap();
+
   for (const [key, sheet] of Object.entries(SHEETS)) {
     try {
       const lines = await fetchSheetLines(sheet.id, sheet.gid);
@@ -398,22 +411,25 @@ app.get('/api/my-results/:telegramId', async (req, res) => {
       const monthTotal = parseInt(playerRow[totalIdx]) || 0;
       if (monthTotal === 0) continue;
 
+      const year = SHEET_YEAR[key];
       let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
 
-      for (const { idx } of dateCols) {
+      for (const { label, idx } of dateCols) {
         const pts = parseInt(playerRow[idx]) || 0;
         if (pts === 0) continue;
 
-        const scores = dataRows
-          .map(cols => parseInt(cols[idx]) || 0)
-          .filter(p => p > 0)
-          .sort((a, b) => b - a);
+        const dateISO = ruDateToISO(label, year);
+        const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
+        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
 
-        const place = scores.indexOf(pts) + 1;
+        const scores = dataRows.map(cols => parseInt(cols[idx]) || 0).filter(p => p > 0).sort((a, b) => b - a);
+        const scoreRank = scores.indexOf(pts) + 1;
+        const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
+
         gamesPlayed++;
         if (pts > bestPoints) bestPoints = pts;
         if (bestPlace === null || place < bestPlace) bestPlace = place;
-        if (place === 1) wins++;
+        if (isWinner) wins++;
       }
 
       totalGames  += gamesPlayed;
@@ -466,6 +482,8 @@ app.get('/api/player-overall', async (req, res) => {
   const months = [];
   let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
 
+  const winnersMap = await loadWinnersMap();
+
   for (const [key, sheet] of Object.entries(SHEETS)) {
     try {
       const lines = await fetchSheetLines(sheet.id, sheet.gid);
@@ -478,21 +496,25 @@ app.get('/api/player-overall', async (req, res) => {
       const monthTotal = parseInt(playerRow[totalIdx]) || 0;
       if (monthTotal === 0) continue;
 
+      const year = SHEET_YEAR[key];
       let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
 
-      for (const { idx } of dateCols) {
+      for (const { label, idx } of dateCols) {
         const pts = parseInt(playerRow[idx]) || 0;
         if (pts === 0) continue;
 
-        const scores = dataRows
-          .map(cols => parseInt(cols[idx]) || 0)
-          .filter(p => p > 0).sort((a, b) => b - a);
+        const dateISO = ruDateToISO(label, year);
+        const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
+        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
 
-        const place = scores.indexOf(pts) + 1;
+        const scores = dataRows.map(cols => parseInt(cols[idx]) || 0).filter(p => p > 0).sort((a, b) => b - a);
+        const scoreRank = scores.indexOf(pts) + 1;
+        const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
+
         gamesPlayed++;
         if (pts > bestPoints) bestPoints = pts;
         if (bestPlace === null || place < bestPlace) bestPlace = place;
-        if (place === 1) wins++;
+        if (isWinner) wins++;
       }
 
       totalGames  += gamesPlayed;
@@ -553,23 +575,42 @@ app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
 
-  const sheet = SHEETS[req.query.month] || SHEETS.may;
+  const monthKey = req.query.month || 'may';
+  const sheet = SHEETS[monthKey] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(sheet.id, sheet.gid);
-    const { nameIdx } = detectSheetStructure(lines);
+    const [lines, winnersMap] = await Promise.all([
+      fetchSheetLines(sheet.id, sheet.gid),
+      loadWinnersMap(),
+    ]);
+    const { nameIdx, dateCols } = detectSheetStructure(lines);
 
-    const players = lines.slice(2)
+    // Находим дату по индексу колонки
+    const col = dateCols.find(c => c.idx === colIndex);
+    const dateISO = col ? ruDateToISO(col.label, SHEET_YEAR[monthKey] || 2026) : null;
+    const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
+    const winnerNorm = actualWinner ? normalize(actualWinner) : null;
+
+    const all = lines.slice(2)
       .map(cols => ({ first_name: resolveName(cols[nameIdx]), rating: parseInt(cols[colIndex]) || 0 }))
       .filter(p => p.first_name !== '' && p.rating > 0)
-      .sort((a, b) => b.rating - a.rating)
-      .map((p, i) => ({ ...p, place: i + 1 }));
+      .sort((a, b) => b.rating - a.rating);
 
-    res.json(players);
+    // Победитель — первым, остальные по очкам
+    const winner = winnerNorm ? all.find(p => normalize(p.first_name) === winnerNorm) : null;
+    const others = all.filter(p => !winnerNorm || normalize(p.first_name) !== winnerNorm);
+
+    const result = [];
+    if (winner) result.push({ ...winner, place: 1 });
+    others.forEach((p, i) => result.push({ ...p, place: (winner ? i + 2 : i + 1) }));
+
+    res.json(result);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
+
+const NEW_SPREADSHEET_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
 
 const SHEET_YEAR = {
   may: 2026, april: 2026, march: 2026,
@@ -587,18 +628,37 @@ const RU_MONTHS = {
 
 function ruDateToISO(label, year) {
   const s = label.trim();
-  // Формат DD.MM
   if (/^\d{1,2}\.\d{2}$/.test(s)) {
     const [d, m] = s.split('.');
     return `${d.padStart(2,'0')}.${m}.${year}`;
   }
-  // Формат "D мес." или "D месяца"
   const parts = s.split(' ');
   if (parts.length < 2) return null;
   const day = parseInt(parts[0]);
   const month = RU_MONTHS[parts[1].toLowerCase()];
   if (!day || !month) return null;
   return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
+}
+
+const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'SEASON TOURNAMENT', 'ЛЕТНЕГО СЕЗОНА'];
+const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
+
+let winnersMapCache = null;
+let winnersMapTs = 0;
+
+async function loadWinnersMap() {
+  if (winnersMapCache && Date.now() - winnersMapTs < CACHE_TTL) return winnersMapCache;
+  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
+  const map = new Map();
+  lines.slice(1).forEach(row => {
+    if (!row[0] || !row[2]) return;
+    if (WINNER_EXCLUDE.some(e => row[1]?.toUpperCase().includes(e))) return;
+    const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
+    map.set(date, resolveName(row[2].trim()));
+  });
+  winnersMapCache = map;
+  winnersMapTs = Date.now();
+  return map;
 }
 
 app.get('/api/analyze-new-sheet', async (req, res) => {
