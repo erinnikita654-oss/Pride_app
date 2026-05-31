@@ -649,4 +649,65 @@ async function loadWinnersMap() {
 
 
 
+app.get('/api/player-tournaments', async (req, res) => {
+  const { nickname } = req.query;
+  if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
+
+  try {
+    const newLines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
+    const tournamentMap = new Map();
+    newLines.slice(1).forEach(row => {
+      if (row[0] && row[1]) {
+        const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
+        tournamentMap.set(date, row[1].trim());
+      }
+    });
+
+    const [winnersMap] = await Promise.all([loadWinnersMap()]);
+    const tournaments = [];
+
+    for (const [key, sheet] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, dateCols } = detectSheetStructure(lines);
+      const dataRows = lines.slice(2);
+
+      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
+      if (!playerRow) continue;
+
+      const year = SHEET_YEAR[key];
+
+      for (const { label, idx } of dateCols) {
+        const pts = parseInt(playerRow[idx]) || 0;
+        if (pts === 0) continue;
+
+        const dateISO = ruDateToISO(label, year);
+        if (!dateISO) continue;
+
+        const actualWinner = winnersMap.get(dateISO);
+        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
+
+        tournaments.push({
+          dateISO,
+          label,
+          pts,
+          tournamentName: tournamentMap.get(dateISO) || null,
+          isWinner,
+          month: key,
+          colIdx: idx,
+        });
+      }
+    }
+
+    tournaments.sort((a, b) => {
+      const [da, ma, ya] = a.dateISO.split('.').map(Number);
+      const [db, mb, yb] = b.dateISO.split('.').map(Number);
+      return new Date(yb, mb - 1, db) - new Date(ya, ma - 1, da);
+    });
+
+    res.json(tournaments);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));

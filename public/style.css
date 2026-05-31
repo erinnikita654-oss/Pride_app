@@ -1126,6 +1126,64 @@ body::before {
   opacity: 0.9;
 }
 
+.tournament-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: border-color 0.2s;
+}
+
+.tournament-card:hover {
+  border-color: var(--gold);
+}
+
+.tournament-card-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.tournament-card-date {
+  font-size: 12px;
+  color: var(--hint);
+}
+
+.tournament-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tournament-win-badge {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.tournament-card-pts {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+.tournament-card-pts-label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--hint);
+}
+
 .month-result-card {
   background: var(--bg-card);
   border: 1px solid var(--gold-border);

@@ -89,6 +89,8 @@ document.getElementById('back-btn').addEventListener('click', () => {
     document.getElementById('screen-player').classList.remove('hidden');
   } else if (gameResultsFrom === 'all-games') {
     document.getElementById('screen-all-games').classList.remove('hidden');
+  } else if (gameResultsFrom === 'tournaments') {
+    document.getElementById('screen-my-tournaments').classList.remove('hidden');
   } else {
     document.querySelectorAll('.tab').forEach(t =>
       t.classList.toggle('active', t.dataset.tab === 'games')
@@ -594,6 +596,62 @@ document.getElementById('profile-results-btn').addEventListener('click', () => {
   openMyResults();
 });
 
+document.getElementById('profile-tournaments-btn').addEventListener('click', () => {
+  openMyTournaments();
+});
+
+document.getElementById('my-tournaments-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.getElementById('screen-profile').classList.remove('hidden');
+});
+
+async function openMyTournaments() {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-my-tournaments').classList.remove('hidden');
+
+  const container = document.getElementById('my-tournaments-content');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  const nick = clubNickname;
+  if (!nick) {
+    container.innerHTML = `<div class="empty-state"><p>Ник не задан</p></div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/player-tournaments?nickname=${encodeURIComponent(nick)}`);
+    const tournaments = await res.json();
+
+    if (!tournaments.length) {
+      container.innerHTML = `<div class="empty-state"><div class="icon">🎯</div><p>Нет турниров</p></div>`;
+      return;
+    }
+
+    container.innerHTML = tournaments.map(t => {
+      const winBadge = t.isWinner ? `<span class="tournament-win-badge">🏆 Победа</span>` : '';
+      const name = t.tournamentName || t.label;
+      return `
+        <div class="tournament-card" data-col="${t.colIdx}" data-month="${t.month}" data-label="${t.label}">
+          <div class="tournament-card-left">
+            <div class="tournament-card-date">🗓 ${t.dateISO}</div>
+            <div class="tournament-card-name">${name}</div>
+            ${winBadge}
+          </div>
+          <div class="tournament-card-pts">${t.pts}<span class="tournament-card-pts-label"> очк.</span></div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.tournament-card').forEach(card => {
+      card.addEventListener('click', () => {
+        openGameResults(card.dataset.col, card.dataset.label, 'tournaments', card.dataset.month);
+      });
+    });
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
 document.getElementById('my-results-back-btn').addEventListener('click', () => {
   hideAllScreens();
   document.getElementById('screen-profile').classList.remove('hidden');
@@ -691,7 +749,7 @@ async function openMyResults() {
 function hideAllScreens() {
   ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
    'screen-all-games', 'screen-my-results', 'screen-player-overall',
-   'screen-about', 'screen-rules']
+   'screen-about', 'screen-rules', 'screen-my-tournaments']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
