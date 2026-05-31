@@ -624,7 +624,7 @@ function ruDateToISO(label, year) {
   return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
 }
 
-const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА'];
+const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА', 'ВЕСЕННЕГО СЕЗОНА'];
 const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
 
 let winnersMapCache = null;
