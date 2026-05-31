@@ -1190,6 +1190,20 @@ body::before {
   opacity: 0.9;
 }
 
+.progress-chart-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.progress-chart-desc {
+  font-size: 12px;
+  color: var(--hint);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
 .progress-chart-wrap {
   position: relative;
   width: 100%;

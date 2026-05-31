@@ -307,11 +307,14 @@
       <!-- Экран графика прогресса -->
       <section id="screen-progress" class="screen hidden">
         <button class="back-btn" id="progress-back-btn">← Назад</button>
-        <div class="section-title" id="progress-title" style="margin-bottom:16px"></div>
+        <div class="section-title" id="progress-title" style="margin-bottom:20px"></div>
+        <div class="progress-chart-label">Очки и победы по месяцам</div>
+        <div class="progress-chart-desc">Сколько очков набрал игрок и сколько раз побеждал в каждом месяце</div>
         <div class="progress-chart-wrap">
           <canvas id="progress-chart"></canvas>
         </div>
-        <div class="section-title" style="font-size:14px;margin:20px 0 10px">Среднее очков за игру</div>
+        <div class="progress-chart-label" style="margin-top:24px">Среднее очков за игру</div>
+        <div class="progress-chart-desc">Средний результат за одну игру — показывает рост или спад уровня игры</div>
         <div class="progress-chart-wrap">
           <canvas id="progress-chart-avg"></canvas>
         </div>
