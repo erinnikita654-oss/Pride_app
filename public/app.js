@@ -596,10 +596,6 @@ document.getElementById('profile-results-btn').addEventListener('click', () => {
   openMyResults();
 });
 
-document.getElementById('profile-tournaments-btn').addEventListener('click', () => {
-  openMyTournaments();
-});
-
 document.getElementById('my-tournaments-back-btn').addEventListener('click', () => {
   hideAllScreens();
   document.getElementById('screen-profile').classList.remove('hidden');
@@ -817,7 +813,9 @@ async function openProfile() {
         </div>
       </div>`;
 
-    container.innerHTML = overallHTML + currentHTML;
+    const tournamentsBtn = `<button class="profile-results-btn" id="profile-tournaments-btn" style="margin:12px 0">🎯 Мои турниры</button>`;
+    container.innerHTML = overallHTML + tournamentsBtn + currentHTML;
+    document.getElementById('profile-tournaments-btn').addEventListener('click', () => openMyTournaments());
   } catch (e) {
     container.innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
   }
