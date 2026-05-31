@@ -398,17 +398,23 @@ document.getElementById('players-search').addEventListener('input', e => {
 
 let progressChartInstance = null;
 let currentProgressNickname = null;
+let progressFrom = 'overall';
 
 document.getElementById('progress-back-btn').addEventListener('click', () => {
   hideAllScreens();
-  document.getElementById('screen-player-overall').classList.remove('hidden');
+  if (progressFrom === 'profile') {
+    document.getElementById('screen-profile').classList.remove('hidden');
+  } else {
+    document.getElementById('screen-player-overall').classList.remove('hidden');
+  }
 });
 
 document.getElementById('open-progress-btn').addEventListener('click', () => {
-  if (currentProgressNickname) openProgressChart(currentProgressNickname);
+  if (currentProgressNickname) openProgressChart(currentProgressNickname, 'overall');
 });
 
-async function openProgressChart(nickname) {
+async function openProgressChart(nickname, from = 'overall') {
+  progressFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('screen-progress').classList.remove('hidden');
@@ -928,8 +934,10 @@ async function openProfile() {
       </div>`;
 
     const tournamentsBtn = `<button class="profile-results-btn" id="profile-tournaments-btn" style="margin:12px 0">Мои турниры</button>`;
-    container.innerHTML = overallHTML + tournamentsBtn + currentHTML;
+    const progressBtn = `<button class="progress-btn" id="profile-progress-btn" style="margin:0 0 12px">📈 График прогресса</button>`;
+    container.innerHTML = overallHTML + tournamentsBtn + progressBtn + currentHTML;
     document.getElementById('profile-tournaments-btn').addEventListener('click', () => openMyTournaments());
+    document.getElementById('profile-progress-btn').addEventListener('click', () => openProgressChart(clubNickname, 'profile'));
   } catch (e) {
     container.innerHTML = '<div class="empty-state"><p>Ошибка загрузки</p></div>';
   }
