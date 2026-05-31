@@ -454,6 +454,7 @@ document.getElementById('players-search').addEventListener('input', e => {
 });
 
 let progressChartInstance = null;
+let progressChartAvgInstance = null;
 let currentProgressNickname = null;
 let progressFrom = 'overall';
 
@@ -477,10 +478,8 @@ async function openProgressChart(nickname, from = 'overall') {
   document.getElementById('screen-progress').classList.remove('hidden');
   document.getElementById('progress-title').textContent = `Прогресс — ${nickname}`;
 
-  if (progressChartInstance) {
-    progressChartInstance.destroy();
-    progressChartInstance = null;
-  }
+  if (progressChartInstance) { progressChartInstance.destroy(); progressChartInstance = null; }
+  if (progressChartAvgInstance) { progressChartAvgInstance.destroy(); progressChartAvgInstance = null; }
 
   try {
     const res = await fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`);
@@ -493,6 +492,7 @@ async function openProgressChart(nickname, from = 'overall') {
     const labels = ordered.map(m => m.label);
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
+    const avg    = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
 
     const ctx = document.getElementById('progress-chart').getContext('2d');
     progressChartInstance = new Chart(ctx, {
@@ -550,6 +550,41 @@ async function openProgressChart(nickname, from = 'overall') {
             ticks: { color: '#e74c3c', stepSize: 1 },
             grid: { drawOnChartArea: false },
             title: { display: true, text: 'Победы', color: '#e74c3c' },
+          },
+        },
+      },
+    });
+    const ctx2 = document.getElementById('progress-chart-avg').getContext('2d');
+    progressChartAvgInstance = new Chart(ctx2, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Среднее очков за игру',
+          data: avg,
+          borderColor: '#2ecc71',
+          backgroundColor: 'rgba(46,204,113,0.15)',
+          borderWidth: 2,
+          pointBackgroundColor: '#2ecc71',
+          pointRadius: 5,
+          tension: 0.3,
+          fill: true,
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { labels: { color: '#e0d5c5', font: { size: 13 } } },
+        },
+        scales: {
+          x: {
+            ticks: { color: '#a89880', font: { size: 10 }, maxRotation: 45 },
+            grid: { color: 'rgba(255,255,255,0.05)' },
+          },
+          y: {
+            ticks: { color: '#2ecc71' },
+            grid: { color: 'rgba(46,204,113,0.1)' },
+            title: { display: true, text: 'Avg очки', color: '#2ecc71' },
           },
         },
       },
