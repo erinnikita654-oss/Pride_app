@@ -279,7 +279,7 @@ app.get('/api/rating', async (req, res) => {
 
     res.json(players);
   } catch (e) {
-    res.status(500).json({ error: 'Не удалось загрузить рейтинг' });
+    res.status(500).json({ error: 'Не удалось загрузить рейтинг', detail: e.message });
   }
 });
 
