@@ -804,4 +804,22 @@ app.get('/api/club-stats', async (req, res) => {
   }
 });
 
+app.get('/api/debug-player-count', async (req, res) => {
+  const allNames = new Set();
+  const namesWithPoints = new Set();
+  for (const [key, sheet] of Object.entries(SHEETS)) {
+    const lines = await fetchSheetLines(sheet.id, sheet.gid);
+    const { nameIdx, dateCols } = detectSheetStructure(lines);
+    const dataRows = lines.slice(2);
+    dataRows.forEach(cols => {
+      const name = resolveName(cols[nameIdx]);
+      if (!name) return;
+      allNames.add(name);
+      const hasPoints = dateCols.some(({ idx }) => (parseInt(cols[idx]) || 0) > 0);
+      if (hasPoints) namesWithPoints.add(name);
+    });
+  }
+  res.json({ allNames: allNames.size, namesWithPoints: namesWithPoints.size });
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
