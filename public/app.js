@@ -120,6 +120,67 @@ function formatDate(dateStr) {
 
 // Ближайший турнир
 // Навигация О клубе и Правила
+document.getElementById('home-stats-btn').addEventListener('click', () => {
+  openClubStats();
+});
+
+document.getElementById('club-stats-back-btn').addEventListener('click', () => {
+  hideAllScreens();
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.toggle('active', t.dataset.tab === 'games'));
+  document.getElementById('tab-games').classList.add('active');
+});
+
+async function openClubStats() {
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-club-stats').classList.remove('hidden');
+
+  const container = document.getElementById('club-stats-content');
+  container.innerHTML = '<div class="loading">Загрузка...</div>';
+
+  try {
+    const res = await fetch('/api/club-stats');
+    const d = await res.json();
+
+    container.innerHTML = `
+      <div class="club-stats-grid">
+        <div class="club-stat-card">
+          <div class="club-stat-value">${d.totalTournaments}</div>
+          <div class="club-stat-label">Турниров проведено</div>
+        </div>
+        <div class="club-stat-card">
+          <div class="club-stat-value">${d.totalPlayers}</div>
+          <div class="club-stat-label">Игроков в клубе</div>
+        </div>
+        <div class="club-stat-card">
+          <div class="club-stat-value">${d.totalGames}</div>
+          <div class="club-stat-label">Игровых дней</div>
+        </div>
+        <div class="club-stat-card">
+          <div class="club-stat-value">${d.totalParticipations}</div>
+          <div class="club-stat-label">Участий в турнирах</div>
+        </div>
+      </div>
+      <div class="club-stat-highlight">
+        <div class="club-stat-highlight-label">👑 Чемпион клуба</div>
+        <div class="club-stat-highlight-name">${d.champion?.name || '—'}</div>
+        <div class="club-stat-highlight-sub">${d.champion?.wins || 0} побед</div>
+      </div>
+      <div class="club-stat-highlight">
+        <div class="club-stat-highlight-label">🔥 Самый активный</div>
+        <div class="club-stat-highlight-name">${d.mostActive?.name || '—'}</div>
+        <div class="club-stat-highlight-sub">${d.mostActive?.games || 0} участий</div>
+      </div>
+      <div class="club-stat-highlight">
+        <div class="club-stat-highlight-label">⚡ Рекорд очков за игру</div>
+        <div class="club-stat-highlight-name">${d.bestResult} очков</div>
+        <div class="club-stat-highlight-sub">${d.bestResultPlayer}</div>
+      </div>`;
+  } catch (e) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Ошибка загрузки</p></div>`;
+  }
+}
+
 document.getElementById('home-about-btn').addEventListener('click', () => {
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -865,7 +926,8 @@ async function openMyResults() {
 function hideAllScreens() {
   ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
    'screen-all-games', 'screen-my-results', 'screen-player-overall',
-   'screen-about', 'screen-rules', 'screen-my-tournaments', 'screen-progress']
+   'screen-about', 'screen-rules', 'screen-my-tournaments', 'screen-progress',
+   'screen-club-stats']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 

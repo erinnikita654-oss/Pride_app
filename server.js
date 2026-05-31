@@ -746,4 +746,62 @@ app.get('/api/player-tournaments', async (req, res) => {
   }
 });
 
+app.get('/api/club-stats', async (req, res) => {
+  try {
+    const [winnersMap, newLines] = await Promise.all([
+      loadWinnersMap(),
+      fetchSheetLines(NEW_SPREADSHEET_ID, '0'),
+    ]);
+
+    // Победы по игрокам (из таблицы 2)
+    const winsCount = {};
+    winnersMap.forEach(winner => {
+      winsCount[winner] = (winsCount[winner] || 0) + 1;
+    });
+    const champion = Object.entries(winsCount).sort((a, b) => b[1] - a[1])[0];
+
+    // Статистика из таблицы 1
+    let totalGames = 0, totalParticipations = 0, bestResult = 0, bestResultPlayer = '';
+    const playerGamesCount = {};
+
+    for (const [key, sheet] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, dateCols } = detectSheetStructure(lines);
+      const dataRows = lines.slice(2);
+
+      totalGames += dateCols.filter(({ idx }) => dataRows.some(row => parseInt(row[idx]) > 0)).length;
+
+      dataRows.forEach(cols => {
+        const name = resolveName(cols[nameIdx]);
+        if (!name) return;
+        for (const { idx } of dateCols) {
+          const pts = parseInt(cols[idx]) || 0;
+          if (pts > 0) {
+            totalParticipations++;
+            playerGamesCount[name] = (playerGamesCount[name] || 0) + 1;
+            if (pts > bestResult) { bestResult = pts; bestResultPlayer = name; }
+          }
+        }
+      });
+    }
+
+    const mostActive = Object.entries(playerGamesCount).sort((a, b) => b[1] - a[1])[0];
+    const totalPlayers = Object.keys(playerGamesCount).length;
+    const totalTournaments = winnersMap.size;
+
+    res.json({
+      totalTournaments,
+      totalPlayers,
+      totalGames,
+      totalParticipations,
+      bestResult,
+      bestResultPlayer,
+      champion: champion ? { name: champion[0], wins: champion[1] } : null,
+      mostActive: mostActive ? { name: mostActive[0], games: mostActive[1] } : null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
