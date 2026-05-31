@@ -624,7 +624,7 @@ function ruDateToISO(label, year) {
   return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
 }
 
-const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'SEASON TOURNAMENT', 'ЛЕТНЕГО СЕЗОНА'];
+const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА'];
 const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
 
 let winnersMapCache = null;
@@ -646,19 +646,5 @@ async function loadWinnersMap() {
 }
 
 
-app.get('/api/debug-pride', async (req, res) => {
-  const NEW_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
-  const lines = await fetchSheetLines(NEW_ID, '0');
-  const all = lines.slice(1).filter(r => r[2] && resolveName(r[2].trim()).toLowerCase() === 'pride');
-  const excluded = all.filter(r => WINNER_EXCLUDE.some(e => r[1]?.toUpperCase().includes(e)));
-  const included = all.filter(r => !WINNER_EXCLUDE.some(e => r[1]?.toUpperCase().includes(e)));
-  res.json({
-    total: all.length,
-    includedCount: included.length,
-    excludedCount: excluded.length,
-    included: included.map(r => ({ date: r[0], tournament: r[1], winner: r[2] })),
-    excluded: excluded.map(r => ({ date: r[0], tournament: r[1], winner: r[2] })),
-  });
-});
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
