@@ -647,4 +647,16 @@ async function loadWinnersMap() {
 
 
 
+app.get('/api/debug-excluded', async (req, res) => {
+  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
+  const rows = lines.slice(1).filter(r => r[0] && r[1]);
+  const excluded = rows.filter(r => WINNER_EXCLUDE.some(e => r[1].toUpperCase().includes(e)));
+  const byType = {};
+  excluded.forEach(r => {
+    const type = r[1];
+    byType[type] = (byType[type] || 0) + 1;
+  });
+  res.json({ total: excluded.length, byType, rows: excluded.map(r => ({ date: r[0], tournament: r[1], winner: r[2] })) });
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
