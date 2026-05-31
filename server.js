@@ -90,15 +90,30 @@ async function fetchSheetLines(spreadsheetId, gid) {
   const cached = sheetCache[cacheKey];
   if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.lines;
 
-  const title = await getSheetTitle(spreadsheetId, gid);
-  const response = await sheetsApi.spreadsheets.values.get({
-    spreadsheetId,
-    range: title,
-  });
+  let lines;
 
-  const lines = (response.data.values || []).map(row =>
-    row.map(c => (c || '').toString().trim())
-  );
+  if (spreadsheetId === OLD_SPREADSHEET_ID) {
+    // Старая публичная таблица — читаем через CSV
+    const response = await fetch(
+      `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`
+    );
+    if (!response.ok) throw new Error('Ошибка загрузки таблицы');
+    const csv = await response.text();
+    lines = csv.trim().split('\n').map(line =>
+      line.split(',').map(c => c.trim().replace(/^"|"$/g, ''))
+    );
+  } else {
+    // Приватная таблица — читаем через API
+    const title = await getSheetTitle(spreadsheetId, gid);
+    const apiResponse = await sheetsApi.spreadsheets.values.get({
+      spreadsheetId,
+      range: title,
+    });
+    lines = (apiResponse.data.values || []).map(row =>
+      row.map(c => (c || '').toString().trim())
+    );
+  }
+
   sheetCache[cacheKey] = { lines, ts: Date.now() };
   return lines;
 }
