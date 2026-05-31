@@ -826,7 +826,7 @@ async function openProfile() {
         </div>
       </div>`;
 
-    const tournamentsBtn = `<button class="profile-results-btn" id="profile-tournaments-btn" style="margin:12px 0">🎯 Мои турниры</button>`;
+    const tournamentsBtn = `<button class="profile-results-btn" id="profile-tournaments-btn" style="margin:12px 0">Мои турниры</button>`;
     container.innerHTML = overallHTML + tournamentsBtn + currentHTML;
     document.getElementById('profile-tournaments-btn').addEventListener('click', () => openMyTournaments());
   } catch (e) {
