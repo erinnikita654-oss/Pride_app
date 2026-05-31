@@ -575,10 +575,22 @@ const SHEET_YEAR = {
   september2025: 2025, august2025: 2025, july2025: 2025,
   june2025: 2025, may2025: 2025, april2025: 2025,
 };
-const RU_MONTHS = { 'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12 };
+const RU_MONTHS = {
+  'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,
+  'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12,
+  'янв.':1,'февр.':2,'мар.':3,'апр.':4,'июн.':6,
+  'июл.':7,'авг.':8,'сент.':9,'окт.':10,'нояб.':11,'дек.':12,
+};
 
 function ruDateToISO(label, year) {
-  const parts = label.trim().split(' ');
+  const s = label.trim();
+  // Формат DD.MM
+  if (/^\d{1,2}\.\d{2}$/.test(s)) {
+    const [d, m] = s.split('.');
+    return `${d.padStart(2,'0')}.${m}.${year}`;
+  }
+  // Формат "D мес." или "D месяца"
+  const parts = s.split(' ');
   if (parts.length < 2) return null;
   const day = parseInt(parts[0]);
   const month = RU_MONTHS[parts[1].toLowerCase()];
