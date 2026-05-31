@@ -18,6 +18,16 @@
       capture_pageview: false,
     });
   </script>
+  <script src="https://cdn.rollbar.com/rollbarjs/refs/tags/v2.26.4/rollbar.min.js"></script>
+  <script>
+    var _rollbarConfig = {
+      accessToken: '524c64e011d4d6312acbc3531f731d39',
+      captureUncaught: true,
+      captureUnhandledRejections: true,
+      payload: { environment: 'production' }
+    };
+    Rollbar.init(_rollbarConfig);
+  </script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>

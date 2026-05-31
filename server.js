@@ -4,8 +4,16 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
+import Rollbar from 'rollbar';
 
 dotenv.config();
+
+const rollbar = new Rollbar({
+  accessToken: '1cb9c9cc2092955d20440a25e08397ab',
+  captureUncaught: true,
+  captureUnhandledRejections: true,
+  environment: 'production',
+});
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -808,5 +816,7 @@ app.get('/api/club-stats', async (req, res) => {
   }
 });
 
+
+app.use(rollbar.errorHandler());
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
