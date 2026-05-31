@@ -620,7 +620,15 @@ app.get('/api/analyze-new-sheet', async (req, res) => {
     // Даты не найденные в старых таблицах
     const missingDates = [...newDates].filter(d => !oldDates.has(d)).sort();
 
-    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates });
+    // Показываем примеры дат из разных листов
+    const dateSamples = {};
+    for (const [key, sheet] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { dateCols } = detectSheetStructure(lines);
+      if (dateCols.length > 0) dateSamples[key] = dateCols.slice(0, 3).map(d => d.label);
+    }
+
+    res.json({ totalTournaments: dataRows.length, missingWinners, missingDates: missingDates.length, dateSamples });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
