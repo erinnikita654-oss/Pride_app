@@ -69,7 +69,10 @@ async function loadAllGames() {
 
     container.innerHTML = games.map(g => `
       <div class="past-game-card" data-col="${g.colIndex}" data-label="${g.label}">
-        <div class="past-game-date">🗓 ${g.label}</div>
+        <div>
+          <div class="past-game-date">🗓 ${g.label}</div>
+          ${g.tournamentName ? `<div class="past-game-tournament">${g.tournamentName}</div>` : ''}
+        </div>
         <div class="past-game-arrow">›</div>
       </div>`).join('');
 
@@ -173,7 +176,10 @@ async function loadPastGames() {
 
     container.innerHTML = games.map(g => `
       <div class="past-game-card" data-col="${g.colIndex}" data-label="${g.label}">
-        <div class="past-game-date">🗓 ${g.label}</div>
+        <div>
+          <div class="past-game-date">🗓 ${g.label}</div>
+          ${g.tournamentName ? `<div class="past-game-tournament">${g.tournamentName}</div>` : ''}
+        </div>
         <div class="past-game-arrow">›</div>
       </div>`).join('');
 
@@ -202,7 +208,13 @@ async function openGameResults(colIndex, label, from = 'games', month = 'may') {
 
   try {
     const res = await fetch(`/api/game-results?col=${colIndex}&month=${month}`);
-    const players = await res.json();
+    const data = await res.json();
+    const players = data.players || data;
+    const tournamentName = data.tournamentName || null;
+
+    if (tournamentName) {
+      document.getElementById('results-title').textContent = tournamentName;
+    }
 
     if (!players.length) {
       container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Нет данных</p></div>`;
@@ -344,6 +356,7 @@ async function openPlayerStats(nickname, month) {
           <div class="past-game-card" data-col="${g.idx}" data-label="${g.label}" data-month="${month}">
             <div>
               <div class="past-game-date">🗓 ${g.label}</div>
+              ${g.tournamentName ? `<div class="past-game-tournament">${g.tournamentName}</div>` : ''}
               <div style="font-size:12px;color:var(--hint);margin-top:2px">${g.place} место из ${g.total}</div>
             </div>
             <div style="text-align:right">

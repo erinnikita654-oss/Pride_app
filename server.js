@@ -309,9 +309,10 @@ app.get('/api/player-stats', async (req, res) => {
   const monthKey = month || 'may';
   const sheet = SHEETS[monthKey] || SHEETS.may;
   try {
-    const [lines, winnersMap] = await Promise.all([
+    const [lines, winnersMap, namesMap] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
       loadWinnersMap(),
+      loadTournamentNamesMap(),
     ]);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
@@ -343,7 +344,8 @@ app.get('/api/player-stats', async (req, res) => {
       totalPoints += pts;
       if (pts > bestPoints) bestPoints = pts;
       if (bestPlace === null || place < bestPlace) bestPlace = place;
-      games.push({ label, idx, pts, place, total: dayParticipants.length });
+      const tournamentName = namesMap.get(dateISO) || null;
+      games.push({ label, idx, pts, place, total: dayParticipants.length, tournamentName });
     }
 
     res.json({ found: true, gamesPlayed, totalPoints, bestPoints, bestPlace, games });
@@ -356,12 +358,18 @@ app.get('/api/player-stats', async (req, res) => {
 
 app.get('/api/past-games', async (req, res) => {
   try {
-    const lines = await fetchSheetLines(SHEETS.may.id, SHEETS.may.gid);
+    const [lines, namesMap] = await Promise.all([
+      fetchSheetLines(SHEETS.may.id, SHEETS.may.gid),
+      loadTournamentNamesMap(),
+    ]);
     const { dateCols } = detectSheetStructure(lines);
 
     const withData = dateCols
       .filter(({ idx }) => lines.slice(2).some(row => parseInt(row[idx]) > 0))
-      .map(({ label, idx }) => ({ label, colIndex: idx }));
+      .map(({ label, idx }) => {
+        const dateISO = ruDateToISO(label, SHEET_YEAR.may);
+        return { label, colIndex: idx, tournamentName: namesMap.get(dateISO) || null };
+      });
 
     res.json(withData.slice(-3).reverse());
   } catch (e) {
@@ -371,14 +379,22 @@ app.get('/api/past-games', async (req, res) => {
 
 // Все прошедшие игры за выбранный месяц
 app.get('/api/all-past-games', async (req, res) => {
-  const sheet = SHEETS[req.query.month] || SHEETS.may;
+  const monthKey = req.query.month || 'may';
+  const sheet = SHEETS[monthKey] || SHEETS.may;
   try {
-    const lines = await fetchSheetLines(sheet.id, sheet.gid);
+    const [lines, namesMap] = await Promise.all([
+      fetchSheetLines(sheet.id, sheet.gid),
+      loadTournamentNamesMap(),
+    ]);
     const { dateCols } = detectSheetStructure(lines);
+    const year = SHEET_YEAR[monthKey] || 2026;
 
     const withData = dateCols
       .filter(({ idx }) => lines.slice(2).some(row => parseInt(row[idx]) > 0))
-      .map(({ label, idx }) => ({ label, colIndex: idx }))
+      .map(({ label, idx }) => {
+        const dateISO = ruDateToISO(label, year);
+        return { label, colIndex: idx, tournamentName: namesMap.get(dateISO) || null };
+      })
       .reverse();
 
     res.json(withData);
@@ -563,9 +579,10 @@ app.get('/api/game-results', async (req, res) => {
   const monthKey = req.query.month || 'may';
   const sheet = SHEETS[monthKey] || SHEETS.may;
   try {
-    const [lines, winnersMap] = await Promise.all([
+    const [lines, winnersMap, namesMap] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
       loadWinnersMap(),
+      loadTournamentNamesMap(),
     ]);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
 
@@ -588,7 +605,8 @@ app.get('/api/game-results', async (req, res) => {
     if (winner) result.push({ ...winner, place: 1 });
     others.forEach((p, i) => result.push({ ...p, place: (winner ? i + 2 : i + 1) }));
 
-    res.json(result);
+    const tournamentName = dateISO ? (namesMap.get(dateISO) || null) : null;
+    res.json({ tournamentName, players: result });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -643,6 +661,24 @@ async function loadWinnersMap() {
   });
   winnersMapCache = map;
   winnersMapTs = Date.now();
+  return map;
+}
+
+let tournamentNamesCache = null;
+let tournamentNamesTs = 0;
+
+async function loadTournamentNamesMap() {
+  if (tournamentNamesCache && Date.now() - tournamentNamesTs < CACHE_TTL) return tournamentNamesCache;
+  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
+  const map = new Map();
+  lines.slice(1).forEach(row => {
+    if (row[0] && row[1]) {
+      const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
+      map.set(date, row[1].trim());
+    }
+  });
+  tournamentNamesCache = map;
+  tournamentNamesTs = Date.now();
   return map;
 }
 

@@ -1126,6 +1126,13 @@ body::before {
   opacity: 0.9;
 }
 
+.past-game-tournament {
+  font-size: 12px;
+  color: var(--hint);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
 .tournament-card {
   display: flex;
   align-items: center;
