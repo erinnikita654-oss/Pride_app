@@ -26,7 +26,7 @@ bot.onText(/\/start/, async (msg) => {
       return;
     }
 
-    await bot.sendMessage(chatId, `Добро пожаловать в покерный клуб, ${firstName}! 🃏\n\nОткрой приложение, чтобы записаться на игры и посмотреть рейтинг.`, {
+    await bot.sendMessage(chatId, `Добро пожаловать в покерный клуб PRIDE!\nОткрой приложение для просмотра рейтинга и статистики участников!`, {
       reply_markup: {
         inline_keyboard: [
           [{ text: '🃏 Открыть клуб', web_app: { url: appUrl } }]
