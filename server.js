@@ -860,8 +860,6 @@ app.get('/api/club-stats', async (req, res) => {
 });
 
 
-app.use(rollbar.errorHandler());
-
 // Расстояние Левенштейна
 function levenshtein(a, b) {
   const m = a.length, n = b.length;
@@ -890,7 +888,7 @@ app.get('/api/suggest-nickname', async (req, res) => {
       lines.slice(2).forEach(cols => {
         const name = resolveName(cols[nameIdx]);
         const pts = parseInt(cols[totalIdx]) || 0;
-        if (name && pts > 0) playerSet.add(name);
+        if (name && pts > 0 && !HIDDEN_PLAYERS.has(normalize(name))) playerSet.add(name);
       });
     } catch (e) {}
   }
@@ -926,5 +924,7 @@ app.get('/api/suggest-nickname', async (req, res) => {
 
   res.json({ exact: false, suggestions });
 });
+
+app.use(rollbar.errorHandler());
 
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));

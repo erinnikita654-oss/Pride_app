@@ -1014,7 +1014,7 @@ function hideAllScreens() {
   ['screen-profile', 'screen-results', 'screen-nickname', 'screen-player',
    'screen-all-games', 'screen-my-results', 'screen-player-overall',
    'screen-about', 'screen-rules', 'screen-my-tournaments', 'screen-progress',
-   'screen-club-stats']
+   'screen-club-stats', 'screen-nick-suggest']
     .forEach(id => document.getElementById(id).classList.add('hidden'));
 }
 
@@ -1143,10 +1143,12 @@ document.getElementById('nickname-btn').addEventListener('click', async () => {
 
       document.getElementById('nick-suggest-yes').onclick = async () => {
         document.getElementById('screen-nick-suggest').classList.add('hidden');
+        document.body.classList.remove('nickname-active');
         await saveNickname(suggested);
       };
       document.getElementById('nick-suggest-no').onclick = async () => {
         document.getElementById('screen-nick-suggest').classList.add('hidden');
+        document.body.classList.remove('nickname-active');
         await saveNickname(nickname);
       };
     } else {
