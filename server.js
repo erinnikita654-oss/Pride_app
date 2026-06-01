@@ -901,20 +901,27 @@ app.get('/api/suggest-nickname', async (req, res) => {
   const exactMatch = players.find(p => normalize(resolveName(p)) === normalize(resolveName(input)));
   if (exactMatch) return res.json({ exact: true, canonical: resolveName(exactMatch), suggestions: [] });
 
-  // 2. Поиск похожих по нескольким критериям
+  // 2. Поиск похожих — только для ников длиннее 3 символов
+  if (inputNorm.length <= 3) return res.json({ exact: false, suggestions: [] });
+
   const scored = players.map(p => {
     const pNorm = normalize(p);
     const pNoSpace = pNorm.replace(/\s/g, '');
     const dist = levenshtein(inputNorm, pNorm);
     const distNoSpace = levenshtein(inputNoSpace, pNoSpace);
-    const contains = pNorm.includes(inputNorm) || inputNorm.includes(pNorm);
+    // "contains" только если оба ника достаточно длинные
+    const contains = inputNorm.length >= 4 && (pNorm.includes(inputNorm) || inputNorm.includes(pNorm));
     return { name: p, dist: Math.min(dist, distNoSpace), contains };
   });
 
   const suggestions = scored
-    .filter(p => p.dist <= 2 || (p.contains && inputNorm.length >= 3))
-    .sort((a, b) => a.dist - b.dist)
-    .slice(0, 2)
+    .filter(p => p.dist <= 2 || p.contains)
+    .sort((a, b) => {
+      if (a.contains && !b.contains) return -1;
+      if (!a.contains && b.contains) return 1;
+      return a.dist - b.dist;
+    })
+    .slice(0, 1)
     .map(p => p.name);
 
   res.json({ exact: false, suggestions });
