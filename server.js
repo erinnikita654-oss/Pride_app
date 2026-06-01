@@ -67,12 +67,45 @@ const MONTH_ORDER = ['may', 'april', 'march', 'february2026', 'january2026', 'de
 const normalize = s => (s || '').trim().toLowerCase();
 
 const ALIASES = {
+  // Ручные алиасы
   'prosto khorosh': 'XR',
   'dranaqueen': 'DramaQueen',
   'нагибатор 2000': 'Нагибатор2000',
   'алексей б': 'Алексей B',
   'ростислав': 'Начальник Голубей',
   'vorokon': 'VoroKon',
+  // Алиасы регистра — из май/апрель 2026
+  'boris': 'BORIS',
+  'coldvan': 'coldvan',
+  'ddg': 'DDG',
+  'doom': 'doom',
+  'drnkl': 'drnkl',
+  'las': 'LAS',
+  'martyn': 'Martyn',
+  'mclovin': 'McLovin',
+  'persona': 'PERSONA',
+  'rezus': 'rezus',
+  'shegale': 'SheGale',
+  'younghomie': 'YoungHomie',
+  'zotka': 'zotka',
+  'александр спб': 'Александр СПБ',
+  'лао': 'Лао',
+  'макс stfu': 'Макс stfu',
+  'непросто саша': 'непросто саша',
+  'валерий вв': 'ВалерийВВ',
+  'владимир 13': 'Владимир13',
+  'янах': 'Яна Х',
+  'асакура хао': 'Асакура Хао',
+  // Алиасы регистра — из более ранних листов
+  'codecayn': 'Codecayn',
+  'doc': 'Doc',
+  'kukuruska': 'Kukuruska',
+  'stonefold': 'Stonefold',
+  'trixter9871': 'Trixter9871',
+  'zzz': 'ZZZ',
+  'зеленый феникс': 'Зеленый феникс',
+  'паровозик thomas': 'Паровозик THOMAS',
+  'еду ниже': 'ЕдуНиже',
 };
 
 function resolveName(name) {
