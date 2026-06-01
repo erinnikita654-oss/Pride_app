@@ -910,7 +910,7 @@ app.get('/api/suggest-nickname', async (req, res) => {
     const dist = levenshtein(inputNorm, pNorm);
     const distNoSpace = levenshtein(inputNoSpace, pNoSpace);
     // "contains" только если оба ника достаточно длинные
-    const contains = inputNorm.length >= 4 && (pNorm.includes(inputNorm) || inputNorm.includes(pNorm));
+    const contains = inputNorm.length >= 4 && pNorm.length >= 4 && (pNorm.includes(inputNorm) || inputNorm.includes(pNorm));
     return { name: p, dist: Math.min(dist, distNoSpace), contains };
   });
 
