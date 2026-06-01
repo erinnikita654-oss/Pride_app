@@ -106,6 +106,15 @@ const ALIASES = {
   'зеленый феникс': 'Зеленый феникс',
   'паровозик thomas': 'Паровозик THOMAS',
   'еду ниже': 'ЕдуНиже',
+  // Финальные алиасы
+  'kamaz': 'KAMAZ',
+  'q.switch': 'Q.Switch',
+  'voop_voop': 'Voop_Voop',
+  'два литра светлого': 'Два Литра Светлого',
+  'оляля': 'ОляЛя',
+  'cocacall': 'CocaCall',
+  'ed': 'ED',
+  'ra': 'RA',
 };
 
 function resolveName(name) {
