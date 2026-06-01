@@ -72,6 +72,7 @@ const ALIASES = {
   'нагибатор 2000': 'Нагибатор2000',
   'алексей б': 'Алексей B',
   'ростислав': 'Начальник Голубей',
+  'vorokon': 'VoroKon',
 };
 
 function resolveName(name) {
