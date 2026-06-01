@@ -862,4 +862,62 @@ app.get('/api/club-stats', async (req, res) => {
 
 app.use(rollbar.errorHandler());
 
+// Расстояние Левенштейна
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+app.get('/api/suggest-nickname', async (req, res) => {
+  const { q } = req.query;
+  if (!q || q.trim().length < 2) return res.json({ exact: false, suggestions: [] });
+
+  const input = q.trim();
+  const inputNorm = normalize(input);
+  const inputNoSpace = inputNorm.replace(/\s/g, '');
+
+  // Собираем всех игроков из всех листов
+  const playerSet = new Set();
+  for (const sheet of Object.values(SHEETS)) {
+    try {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, totalIdx } = detectSheetStructure(lines);
+      lines.slice(2).forEach(cols => {
+        const name = resolveName(cols[nameIdx]);
+        const pts = parseInt(cols[totalIdx]) || 0;
+        if (name && pts > 0) playerSet.add(name);
+      });
+    } catch (e) {}
+  }
+
+  const players = [...playerSet];
+
+  // 1. Точное совпадение (с учётом регистра через алиасы)
+  const exactMatch = players.find(p => normalize(resolveName(p)) === normalize(resolveName(input)));
+  if (exactMatch) return res.json({ exact: true, canonical: resolveName(exactMatch), suggestions: [] });
+
+  // 2. Поиск похожих по нескольким критериям
+  const scored = players.map(p => {
+    const pNorm = normalize(p);
+    const pNoSpace = pNorm.replace(/\s/g, '');
+    const dist = levenshtein(inputNorm, pNorm);
+    const distNoSpace = levenshtein(inputNoSpace, pNoSpace);
+    const contains = pNorm.includes(inputNorm) || inputNorm.includes(pNorm);
+    return { name: p, dist: Math.min(dist, distNoSpace), contains };
+  });
+
+  const suggestions = scored
+    .filter(p => p.dist <= 2 || (p.contains && inputNorm.length >= 3))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 2)
+    .map(p => p.name);
+
+  res.json({ exact: false, suggestions });
+});
+
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));

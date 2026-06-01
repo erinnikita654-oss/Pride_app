@@ -1093,6 +1093,26 @@ async function openProfile() {
   }
 }
 
+async function saveNickname(nickname) {
+  if (isWeb) {
+    localStorage.setItem(WEB_NICKNAME_KEY, nickname);
+    window.location.reload();
+    return;
+  }
+  const res = await fetch('/api/profile/set-nickname', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ telegramId, nickname, username, firstName })
+  });
+  if (res.ok) {
+    window.location.reload();
+  } else {
+    document.getElementById('nickname-btn').disabled = false;
+    document.getElementById('nickname-btn').textContent = 'Войти в клуб';
+    showToast('Ошибка, попробуй ещё раз', 'error');
+  }
+}
+
 document.getElementById('nickname-btn').addEventListener('click', async () => {
   const input = document.getElementById('nickname-input');
   const nickname = input.value.trim();
@@ -1103,27 +1123,38 @@ document.getElementById('nickname-btn').addEventListener('click', async () => {
 
   const btn = document.getElementById('nickname-btn');
   btn.disabled = true;
-  btn.textContent = 'Сохраняем...';
+  btn.textContent = 'Проверяем...';
 
-  if (isWeb) {
-    // Веб: сохраняем только в localStorage
-    localStorage.setItem(WEB_NICKNAME_KEY, nickname);
-    window.location.reload();
-    return;
-  }
+  try {
+    const res = await fetch(`/api/suggest-nickname?q=${encodeURIComponent(nickname)}`);
+    const data = await res.json();
 
-  const res = await fetch('/api/profile/set-nickname', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ telegramId, nickname, username, firstName })
-  });
+    if (data.exact) {
+      // Точное совпадение — сохраняем канонический ник
+      await saveNickname(data.canonical);
+    } else if (data.suggestions.length > 0) {
+      // Есть похожий — показываем диалог
+      btn.disabled = false;
+      btn.textContent = 'Войти в клуб';
+      const suggested = data.suggestions[0];
+      document.getElementById('nick-suggest-name').textContent = suggested;
+      document.getElementById('screen-nick-suggest').classList.remove('hidden');
+      document.body.classList.add('nickname-active');
 
-  if (res.ok) {
-    window.location.reload();
-  } else {
-    btn.disabled = false;
-    btn.textContent = 'Войти в клуб';
-    showToast('Ошибка, попробуй ещё раз', 'error');
+      document.getElementById('nick-suggest-yes').onclick = async () => {
+        document.getElementById('screen-nick-suggest').classList.add('hidden');
+        await saveNickname(suggested);
+      };
+      document.getElementById('nick-suggest-no').onclick = async () => {
+        document.getElementById('screen-nick-suggest').classList.add('hidden');
+        await saveNickname(nickname);
+      };
+    } else {
+      // Нет похожих — сохраняем как есть
+      await saveNickname(nickname);
+    }
+  } catch (e) {
+    await saveNickname(nickname);
   }
 });
 
