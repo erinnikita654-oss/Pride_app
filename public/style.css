@@ -1232,6 +1232,31 @@ body::before {
   opacity: 0.9;
 }
 
+.period-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.period-btn {
+  flex: 1;
+  padding: 8px 0;
+  background: var(--bg-card);
+  border: 1px solid var(--gold-border);
+  border-radius: 9px;
+  color: var(--hint);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.period-btn.active {
+  background: linear-gradient(135deg, #e8c87a, var(--gold));
+  border-color: var(--gold);
+  color: #1a1208;
+}
+
 .progress-chart-label {
   font-size: 15px;
   font-weight: 700;
@@ -1249,7 +1274,8 @@ body::before {
 .progress-chart-wrap {
   position: relative;
   width: 100%;
-  padding: 16px 0;
+  height: 300px;
+  padding: 8px 0 4px;
 }
 
 .progress-btn {

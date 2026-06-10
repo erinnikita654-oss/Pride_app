@@ -478,6 +478,9 @@ let progressChartInstance = null;
 let progressChartAvgInstance = null;
 let currentProgressNickname = null;
 let progressFrom = 'overall';
+let progressMonths = null;
+let progressClubMap = {};
+let progressPeriod = 6;
 
 document.getElementById('progress-back-btn').addEventListener('click', () => {
   hideAllScreens();
@@ -500,26 +503,38 @@ async function openProgressChart(nickname, from = 'overall') {
   document.getElementById('screen-progress').classList.remove('hidden');
   document.getElementById('progress-title').textContent = `Прогресс — ${nickname}`;
 
-  if (progressChartInstance) { progressChartInstance.destroy(); progressChartInstance = null; }
-  if (progressChartAvgInstance) { progressChartAvgInstance.destroy(); progressChartAvgInstance = null; }
-
   try {
     const [res, clubRes] = await Promise.all([
       fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`),
       fetch('/api/club-averages'),
     ]);
     const d = await res.json();
-    const clubMap = await clubRes.json().catch(() => ({}));
+    progressClubMap = await clubRes.json().catch(() => ({}));
 
-    if (!d.months || !d.months.length) return;
+    if (!d.months || !d.months.length) { progressMonths = null; return; }
+    progressMonths = d.months;
+    renderProgressCharts(progressPeriod);
+  } catch (e) {
+    console.error(e);
+  }
+}
 
-    // Последние 12 месяцев, от старых к новым
-    const ordered = [...d.months].slice(0, 12).reverse();
-    const labels = ordered.map(m => m.label);
+function renderProgressCharts(period) {
+  if (!progressMonths) return;
+  progressPeriod = period;
+  document.querySelectorAll('.period-btn').forEach(b =>
+    b.classList.toggle('active', Number(b.dataset.period) === period));
+
+  if (progressChartInstance) { progressChartInstance.destroy(); progressChartInstance = null; }
+  if (progressChartAvgInstance) { progressChartAvgInstance.destroy(); progressChartAvgInstance = null; }
+
+  // Последние N месяцев, от старых к новым
+  const ordered = [...progressMonths].slice(0, period).reverse();
+  const labels = ordered.map(m => m.label);
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
     const avg = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
-    const clubAvg = ordered.map(m => clubMap[m.key] ?? null);
+    const clubAvg = ordered.map(m => progressClubMap[m.key] ?? null);
 
     // Накопительное среднее: суммарные очки / суммарные игры до каждого месяца
     let cumPoints = 0, cumGames = 0;
@@ -563,6 +578,7 @@ async function openProgressChart(nickname, from = 'overall') {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: {
@@ -571,7 +587,7 @@ async function openProgressChart(nickname, from = 'overall') {
         },
         scales: {
           x: {
-            ticks: { color: '#a89880', font: { size: 10 }, maxRotation: 45 },
+            ticks: { color: '#a89880', font: { size: 11 }, autoSkip: true, maxTicksLimit: 6, maxRotation: 40, minRotation: 0 },
             grid: { color: 'rgba(255,255,255,0.05)' },
           },
           y: {
@@ -634,12 +650,13 @@ async function openProgressChart(nickname, from = 'overall') {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color: '#e0d5c5', font: { size: 13 } } },
         },
         scales: {
           x: {
-            ticks: { color: '#a89880', font: { size: 10 }, maxRotation: 45 },
+            ticks: { color: '#a89880', font: { size: 11 }, autoSkip: true, maxTicksLimit: 6, maxRotation: 40, minRotation: 0 },
             grid: { color: 'rgba(255,255,255,0.05)' },
           },
           y: {
@@ -650,10 +667,16 @@ async function openProgressChart(nickname, from = 'overall') {
         },
       },
     });
-  } catch (e) {
-    console.error(e);
-  }
 }
+
+// Переключатель периода графика (3 / 6 / 12 месяцев)
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = Number(btn.dataset.period);
+    track('progress_period_change', { period: p });
+    renderProgressCharts(p);
+  });
+});
 
 document.getElementById('player-overall-back-btn').addEventListener('click', () => {
   hideAllScreens();
