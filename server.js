@@ -27,9 +27,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// --- Google Sheets ---
+// --- Google Sheets: константы ---
 
+// Старая публичная таблица — рейтинговые листы по месяцам (читается через CSV export)
 const OLD_SPREADSHEET_ID = '1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0';
+// Новая приватная таблица — итоги турниров: дата, название, победитель (читается через API)
+const NEW_SPREADSHEET_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
 
 const SHEETS = {
   june:          { id: OLD_SPREADSHEET_ID, gid: '1627150203' },
@@ -49,11 +52,8 @@ const SHEETS = {
   april2025:     { id: OLD_SPREADSHEET_ID, gid: '417165698' },
 };
 
-const sheetsAuth = new google.auth.GoogleAuth({
-  credentials: JSON.parse(Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_B64 || 'e30=', 'base64').toString('utf8')),
-  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-});
-const sheetsApi = google.sheets({ version: 'v4', auth: sheetsAuth });
+// Текущий месяц — дефолт для всех экранов; при переходе на новый месяц поменять здесь
+const CURRENT_MONTH = 'june';
 
 const MONTH_NAMES = {
   june: 'Июнь 2026',
@@ -64,10 +64,27 @@ const MONTH_NAMES = {
   august2025: 'Август 2025', july2025: 'Июль 2025',
   june2025: 'Июнь 2025', may2025: 'Май 2025', april2025: 'Апрель 2025',
 };
-// Текущий месяц — дефолт для всех экранов; при переходе на новый месяц поменять здесь
-const CURRENT_MONTH = 'june';
 
 const MONTH_ORDER = ['june', 'may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
+
+const SHEET_YEAR = {
+  june: 2026, may: 2026, april: 2026, march: 2026,
+  february2026: 2026, january2026: 2026,
+  december2025: 2025, november2025: 2025, october2025: 2025,
+  september2025: 2025, august2025: 2025, july2025: 2025,
+  june2025: 2025, may2025: 2025, april2025: 2025,
+};
+
+// Турниры, не считающиеся победами (финалы сезонов)
+const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА', 'ВЕСЕННЕГО СЕЗОНА'];
+
+// Игроки, скрытые из всех экранов (данные хранятся, но не отображаются)
+const HIDDEN_PLAYERS = new Set(['klu4']);
+
+// Исправления опечаток в датах новой таблицы
+const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
+
+// --- Нормализация имён ---
 
 const normalize = s => (s || '').trim().toLowerCase();
 
@@ -79,7 +96,7 @@ const ALIASES = {
   'алексей б': 'Алексей B',
   'ростислав': 'Начальник Голубей',
   'vorokon': 'VoroKon',
-  // Алиасы регистра — из май/апрель 2026
+  // Регистр
   'boris': 'BORIS',
   'coldvan': 'coldvan',
   'ddg': 'DDG',
@@ -101,7 +118,6 @@ const ALIASES = {
   'владимир 13': 'Владимир13',
   'янах': 'Яна Х',
   'асакура хао': 'Асакура Хао',
-  // Алиасы регистра — из более ранних листов
   'codecayn': 'Codecayn',
   'doc': 'Doc',
   'kukuruska': 'Kukuruska',
@@ -111,7 +127,6 @@ const ALIASES = {
   'зеленый феникс': 'Зеленый феникс',
   'паровозик thomas': 'Паровозик THOMAS',
   'еду ниже': 'ЕдуНиже',
-  // Финальные алиасы
   'kamaz': 'KAMAZ',
   'q.switch': 'Q.Switch',
   'voop_voop': 'Voop_Voop',
@@ -120,13 +135,19 @@ const ALIASES = {
   'cocacall': 'CocaCall',
   'ed': 'ED',
   'ra': 'RA',
-  'никита ерин': 'Ерин Никита',
+  'начальник голубей': 'Начальник Голубей',
   // Имя/фамилия в разном порядке
+  'никита ерин': 'Ерин Никита',
   'захаров андрей': 'Андрей Захаров',
   // Точка в конце
   'станислав к.': 'Станислав К',
   'алексей п.': 'Алексей П',
   'сергей ш.': 'Сергей Ш',
+  'диана с.': 'Диана С',
+  'анастасия г.': 'Анастасия Г',
+  'стас в.': 'Стас В',
+  'андрей ф.': 'Андрей Ф',
+  'александр к.': 'Александр К',
   // Пробел / слитно / разделитель
   'discipline pay off': 'Discipline payoff',
   'иришка чикипики': 'Иришка Чики Пики',
@@ -135,41 +156,29 @@ const ALIASES = {
   'voopvoop': 'Voop_Voop',
   'voop-voop': 'Voop_Voop',
   'mr.fish': 'MrFish',
+  'артемкоз': 'Артём Коз',
+  // е/ё, э/е
+  'артём': 'Артем',
+  'тёма аноним': 'Тема Аноним',
+  'артём91': 'Артем91',
+  'лёха': 'Леха',
+  'данёчек': 'Данечек',
+  'йённифер': 'Йеннифер',
+  'аннет': 'Аннэт',
+  'александр риэлтор': 'Александр Риелтор',
+  // Апостроф / без
+  "paratan": "ParaTan'",
+  // Спецсимволы
+  'nuriya\\_xo': 'Nuriya_Xo',
+  // 0 вместо o
+  'doomwo0w': 'DoomWoow',
+  'doomw0w': 'DoomWoow',
   // Опечатки / варианты
   'хиханьки': 'хаханьки',
   'сашка жаркий': 'Саша Жаркий',
   'mohamed allin': 'Mohammed Allin',
   'kilfish': 'killfish',
   'kseniia k': 'Ksenia K',
-  // 0 вместо o
-  'doomwo0w': 'DoomWoow',
-  'doomw0w': 'DoomWoow',
-  // е/ё
-  'артём': 'Артем',
-  'тёма аноним': 'Тема Аноним',
-  // Апостроф / без
-  "paratan": "ParaTan'",
-  // е/ё
-  'артём91': 'Артем91',
-  'лёха': 'Леха',
-  'данёчек': 'Данечек',
-  'йённифер': 'Йеннифер',
-  // э/е
-  'аннет': 'Аннэт',
-  'александр риэлтор': 'Александр Риелтор',
-  // Точка в конце
-  'диана с.': 'Диана С',
-  'анастасия г.': 'Анастасия Г',
-  'стас в.': 'Стас В',
-  'андрей ф.': 'Андрей Ф',
-  'александр к.': 'Александр К',
-  // Пробел / слитно
-  'артемкоз': 'Артём Коз',
-  // Регистр для отображения
-  'начальник голубей': 'Начальник Голубей',
-  // Спецсимволы
-  'nuriya\\_xo': 'Nuriya_Xo',
-  // Очевидные опечатки
   'ниолай': 'Николай',
   'chost': 'Ghost',
   'фямис': 'Фянис',
@@ -186,12 +195,48 @@ function resolveName(name) {
   return ALIASES[normalize(n)] || n;
 }
 
-// Кэш листов: { "spreadsheetId:gid" -> { lines, ts } }
-const sheetCache = {};
+// Имя из таблицы (сырое) соответствует запрошенному нику? Резолвится только сырое имя
+const matchesNick = (rawName, nickname) => normalize(resolveName(rawName)) === normalize(nickname);
+
+// --- Даты ---
+
+const RU_MONTHS = {
+  'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,
+  'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12,
+  'янв.':1,'февр.':2,'мар.':3,'апр.':4,'июн.':6,
+  'июл.':7,'авг.':8,'сент.':9,'окт.':10,'нояб.':11,'дек.':12,
+};
+
+// "27 мая" / "4 июн." / "27.05" -> "27.05.2026"; null если не распарсилось
+function ruDateToISO(label, year) {
+  const s = label.trim();
+  if (/^\d{1,2}\.\d{2}$/.test(s)) {
+    const [d, m] = s.split('.');
+    return `${d.padStart(2,'0')}.${m}.${year}`;
+  }
+  const parts = s.split(' ');
+  if (parts.length < 2) return null;
+  const day = parseInt(parts[0]);
+  const month = RU_MONTHS[parts[1].toLowerCase()];
+  if (!day || !month) return null;
+  return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
+}
+
+// --- Чтение листов ---
+
 const CACHE_TTL = 300_000; // 5 минут
 
-// Кэш названий листов: { spreadsheetId -> { gid -> title } }
+// Кэш листов: { "spreadsheetId:gid" -> { lines, ts } }
+const sheetCache = {};
+
+// Кэш названий листов приватной таблицы: { spreadsheetId -> { gid -> title } }
 const sheetTitleCache = {};
+
+const sheetsAuth = new google.auth.GoogleAuth({
+  credentials: JSON.parse(Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_B64 || 'e30=', 'base64').toString('utf8')),
+  scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+});
+const sheetsApi = google.sheets({ version: 'v4', auth: sheetsAuth });
 
 async function getSheetTitle(spreadsheetId, gid) {
   if (!sheetTitleCache[spreadsheetId]) {
@@ -250,6 +295,92 @@ function detectSheetStructure(lines) {
     }
   }
   return { nameIdx: resolvedName, totalIdx: resolvedTotal, dateCols };
+}
+
+function findPlayerRow(dataRows, nameIdx, nickname) {
+  return dataRows.find(cols => matchesNick(cols[nameIdx], nickname));
+}
+
+// --- Новая таблица: победители и названия турниров ---
+
+// Один проход по новой таблице даёт обе мапы (date -> winner, date -> tournament name)
+let newTableCache = null;
+let newTableTs = 0;
+
+async function loadNewTableMaps() {
+  if (newTableCache && Date.now() - newTableTs < CACHE_TTL) return newTableCache;
+  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
+  const winners = new Map();
+  const names = new Map();
+  lines.slice(1).forEach(row => {
+    if (!row[0]) return;
+    const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
+    if (row[1]) names.set(date, row[1].trim());
+    if (row[2] && !WINNER_EXCLUDE.some(e => row[1]?.toUpperCase().includes(e))) {
+      winners.set(date, resolveName(row[2].trim()));
+    }
+  });
+  newTableCache = { winners, names };
+  newTableTs = Date.now();
+  return newTableCache;
+}
+
+const loadWinnersMap = async () => (await loadNewTableMaps()).winners;
+const loadTournamentNamesMap = async () => (await loadNewTableMaps()).names;
+
+// --- Общая статистика игрока по всем месяцам (для my-results и player-overall) ---
+
+async function computePlayerOverall(nickname) {
+  const months = [];
+  let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
+
+  const winnersMap = await loadWinnersMap();
+
+  for (const [key, sheet] of Object.entries(SHEETS)) {
+    try {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
+      const dataRows = lines.slice(2);
+
+      const playerRow = findPlayerRow(dataRows, nameIdx, nickname);
+      if (!playerRow) continue;
+
+      const monthTotal = parseInt(playerRow[totalIdx]) || 0;
+      if (monthTotal === 0) continue;
+
+      const year = SHEET_YEAR[key];
+      let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
+
+      for (const { label, idx } of dateCols) {
+        const pts = parseInt(playerRow[idx]) || 0;
+        if (pts === 0) continue;
+
+        const dateISO = ruDateToISO(label, year);
+        const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
+        const isWinner = actualWinner && matchesNick(actualWinner, nickname);
+
+        const scores = dataRows.map(cols => parseInt(cols[idx]) || 0).filter(p => p > 0).sort((a, b) => b - a);
+        const scoreRank = scores.indexOf(pts) + 1;
+        const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
+
+        gamesPlayed++;
+        if (pts > bestPoints) bestPoints = pts;
+        if (bestPlace === null || place < bestPlace) bestPlace = place;
+        if (isWinner) wins++;
+      }
+
+      totalGames  += gamesPlayed;
+      totalPoints += monthTotal;
+      if (bestPoints > allBestPoints) allBestPoints = bestPoints;
+      if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
+      totalWins += wins;
+
+      months.push({ key, label: MONTH_NAMES[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
+    } catch (e) {}
+  }
+
+  months.sort((a, b) => MONTH_ORDER.indexOf(a.key) - MONTH_ORDER.indexOf(b.key));
+  return { nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months };
 }
 
 // --- Игры (Supabase) ---
@@ -341,7 +472,7 @@ app.get('/api/profile/:telegramId', async (req, res) => {
 });
 
 app.post('/api/profile/set-nickname', async (req, res) => {
-  const { telegramId, nickname, username, firstName } = req.body;
+  const { telegramId, nickname, username } = req.body;
   if (!nickname || nickname.trim().length < 2) {
     return res.status(400).json({ error: 'Ник слишком короткий' });
   }
@@ -374,7 +505,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
     const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
-    const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
+    const playerRow = findPlayerRow(dataRows, nameIdx, nickname);
 
     if (playerRow) {
       monthPoints = parseInt(playerRow[totalIdx]) || 0;
@@ -417,6 +548,7 @@ app.get('/api/rating', async (req, res) => {
   }
 });
 
+// Статистика игрока за один месяц, с разбивкой по играм
 app.get('/api/player-stats', async (req, res) => {
   const { nickname, month } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
@@ -424,15 +556,14 @@ app.get('/api/player-stats', async (req, res) => {
   const monthKey = month || CURRENT_MONTH;
   const sheet = SHEETS[monthKey] || SHEETS[CURRENT_MONTH];
   try {
-    const [lines, winnersMap, namesMap] = await Promise.all([
+    const [lines, { winners: winnersMap, names: namesMap }] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
-      loadWinnersMap(),
-      loadTournamentNamesMap(),
+      loadNewTableMaps(),
     ]);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
-    const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
+    const playerRow = findPlayerRow(dataRows, nameIdx, nickname);
     if (!playerRow) return res.json({ found: false });
 
     const year = SHEET_YEAR[monthKey] || 2026;
@@ -445,7 +576,7 @@ app.get('/api/player-stats', async (req, res) => {
 
       const dateISO = ruDateToISO(label, year);
       const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
-      const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
+      const isWinner = actualWinner && matchesNick(actualWinner, nickname);
 
       const dayParticipants = dataRows
         .map(cols => parseInt(cols[idx]) || 0)
@@ -471,6 +602,7 @@ app.get('/api/player-stats', async (req, res) => {
 
 // --- Прошедшие игры ---
 
+// Последние 3 игры текущего месяца
 app.get('/api/past-games', async (req, res) => {
   try {
     const [lines, namesMap] = await Promise.all([
@@ -518,64 +650,22 @@ app.get('/api/all-past-games', async (req, res) => {
   }
 });
 
-// Мои результаты — статистика по всем месяцам
+// Мои результаты — статистика по всем месяцам (по telegram id)
 app.get('/api/my-results/:telegramId', async (req, res) => {
   const { data: user } = await supabase
     .from('users').select('*').eq('telegram_id', req.params.telegramId).single();
 
   if (!user) return res.status(404).json({ error: 'Не найден' });
 
-  const nickname = user.first_name || '';
-  const months = [];
-  let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
+  res.json(await computePlayerOverall(user.first_name || ''));
+});
 
-  const winnersMap = await loadWinnersMap();
+// Общая статистика конкретного игрока по всем месяцам (по нику)
+app.get('/api/player-overall', async (req, res) => {
+  const { nickname } = req.query;
+  if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
-  for (const [key, sheet] of Object.entries(SHEETS)) {
-    try {
-      const lines = await fetchSheetLines(sheet.id, sheet.gid);
-      const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
-      const dataRows = lines.slice(2);
-
-      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
-      if (!playerRow) continue;
-
-      const monthTotal = parseInt(playerRow[totalIdx]) || 0;
-      if (monthTotal === 0) continue;
-
-      const year = SHEET_YEAR[key];
-      let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
-
-      for (const { label, idx } of dateCols) {
-        const pts = parseInt(playerRow[idx]) || 0;
-        if (pts === 0) continue;
-
-        const dateISO = ruDateToISO(label, year);
-        const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
-        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
-
-        const scores = dataRows.map(cols => parseInt(cols[idx]) || 0).filter(p => p > 0).sort((a, b) => b - a);
-        const scoreRank = scores.indexOf(pts) + 1;
-        const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
-
-        gamesPlayed++;
-        if (pts > bestPoints) bestPoints = pts;
-        if (bestPlace === null || place < bestPlace) bestPlace = place;
-        if (isWinner) wins++;
-      }
-
-      totalGames  += gamesPlayed;
-      totalPoints += monthTotal;
-      if (bestPoints > allBestPoints) allBestPoints = bestPoints;
-      if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
-      totalWins += wins;
-
-      months.push({ key, label: MONTH_NAMES[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
-    } catch (e) {}
-  }
-
-  months.sort((a, b) => MONTH_ORDER.indexOf(a.key) - MONTH_ORDER.indexOf(b.key));
-  res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
+  res.json(await computePlayerOverall(nickname));
 });
 
 // Все игроки — сводный список по всем месяцам
@@ -583,7 +673,7 @@ app.get('/api/all-players', async (req, res) => {
   try {
     const playerMap = {};
 
-    for (const [key, sheet] of Object.entries(SHEETS)) {
+    for (const sheet of Object.values(SHEETS)) {
       const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, totalIdx } = detectSheetStructure(lines);
 
@@ -604,63 +694,6 @@ app.get('/api/all-players', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
-});
-
-// Общая статистика конкретного игрока по всем месяцам
-app.get('/api/player-overall', async (req, res) => {
-  const { nickname } = req.query;
-  if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
-
-  const months = [];
-  let totalGames = 0, totalPoints = 0, allBestPoints = 0, allBestPlace = null, totalWins = 0;
-
-  const winnersMap = await loadWinnersMap();
-
-  for (const [key, sheet] of Object.entries(SHEETS)) {
-    try {
-      const lines = await fetchSheetLines(sheet.id, sheet.gid);
-      const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
-      const dataRows = lines.slice(2);
-
-      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
-      if (!playerRow) continue;
-
-      const monthTotal = parseInt(playerRow[totalIdx]) || 0;
-      if (monthTotal === 0) continue;
-
-      const year = SHEET_YEAR[key];
-      let gamesPlayed = 0, bestPoints = 0, bestPlace = null, wins = 0;
-
-      for (const { label, idx } of dateCols) {
-        const pts = parseInt(playerRow[idx]) || 0;
-        if (pts === 0) continue;
-
-        const dateISO = ruDateToISO(label, year);
-        const actualWinner = dateISO ? winnersMap.get(dateISO) : null;
-        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
-
-        const scores = dataRows.map(cols => parseInt(cols[idx]) || 0).filter(p => p > 0).sort((a, b) => b - a);
-        const scoreRank = scores.indexOf(pts) + 1;
-        const place = isWinner ? 1 : (scoreRank === 1 && actualWinner ? 2 : scoreRank);
-
-        gamesPlayed++;
-        if (pts > bestPoints) bestPoints = pts;
-        if (bestPlace === null || place < bestPlace) bestPlace = place;
-        if (isWinner) wins++;
-      }
-
-      totalGames  += gamesPlayed;
-      totalPoints += monthTotal;
-      if (bestPoints > allBestPoints) allBestPoints = bestPoints;
-      if (allBestPlace === null || (bestPlace && bestPlace < allBestPlace)) allBestPlace = bestPlace;
-      totalWins += wins;
-
-      months.push({ key, label: MONTH_NAMES[key], gamesPlayed, monthTotal, bestPoints, bestPlace, wins });
-    } catch (e) {}
-  }
-
-  months.sort((a, b) => MONTH_ORDER.indexOf(a.key) - MONTH_ORDER.indexOf(b.key));
-  res.json({ nickname, totalGames, totalPoints, allBestPoints, allBestPlace, totalWins, months });
 });
 
 // Легенды клуба — топ-15 по количеству побед за всё время (из новой таблицы)
@@ -688,6 +721,7 @@ app.get('/api/legends', async (req, res) => {
   }
 });
 
+// Результаты одной игры (колонка листа)
 app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
@@ -695,10 +729,9 @@ app.get('/api/game-results', async (req, res) => {
   const monthKey = req.query.month || CURRENT_MONTH;
   const sheet = SHEETS[monthKey] || SHEETS[CURRENT_MONTH];
   try {
-    const [lines, winnersMap, namesMap] = await Promise.all([
+    const [lines, { winners: winnersMap, names: namesMap }] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
-      loadWinnersMap(),
-      loadTournamentNamesMap(),
+      loadNewTableMaps(),
     ]);
     const { nameIdx, dateCols } = detectSheetStructure(lines);
 
@@ -728,96 +761,13 @@ app.get('/api/game-results', async (req, res) => {
   }
 });
 
-
-const NEW_SPREADSHEET_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
-
-const SHEET_YEAR = {
-  june: 2026, may: 2026, april: 2026, march: 2026,
-  february2026: 2026, january2026: 2026,
-  december2025: 2025, november2025: 2025, october2025: 2025,
-  september2025: 2025, august2025: 2025, july2025: 2025,
-  june2025: 2025, may2025: 2025, april2025: 2025,
-};
-const RU_MONTHS = {
-  'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,
-  'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12,
-  'янв.':1,'февр.':2,'мар.':3,'апр.':4,'июн.':6,
-  'июл.':7,'авг.':8,'сент.':9,'окт.':10,'нояб.':11,'дек.':12,
-};
-
-function ruDateToISO(label, year) {
-  const s = label.trim();
-  if (/^\d{1,2}\.\d{2}$/.test(s)) {
-    const [d, m] = s.split('.');
-    return `${d.padStart(2,'0')}.${m}.${year}`;
-  }
-  const parts = s.split(' ');
-  if (parts.length < 2) return null;
-  const day = parseInt(parts[0]);
-  const month = RU_MONTHS[parts[1].toLowerCase()];
-  if (!day || !month) return null;
-  return `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
-}
-
-const WINNER_EXCLUDE = ['FINAL OF THE MONTH', 'ЛЕТНЕГО СЕЗОНА', 'ВЕСЕННЕГО СЕЗОНА'];
-
-const HIDDEN_PLAYERS = new Set(['klu4']);
-const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
-
-let winnersMapCache = null;
-let winnersMapTs = 0;
-
-async function loadWinnersMap() {
-  if (winnersMapCache && Date.now() - winnersMapTs < CACHE_TTL) return winnersMapCache;
-  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
-  const map = new Map();
-  lines.slice(1).forEach(row => {
-    if (!row[0] || !row[2]) return;
-    if (WINNER_EXCLUDE.some(e => row[1]?.toUpperCase().includes(e))) return;
-    const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
-    map.set(date, resolveName(row[2].trim()));
-  });
-  winnersMapCache = map;
-  winnersMapTs = Date.now();
-  return map;
-}
-
-let tournamentNamesCache = null;
-let tournamentNamesTs = 0;
-
-async function loadTournamentNamesMap() {
-  if (tournamentNamesCache && Date.now() - tournamentNamesTs < CACHE_TTL) return tournamentNamesCache;
-  const lines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
-  const map = new Map();
-  lines.slice(1).forEach(row => {
-    if (row[0] && row[1]) {
-      const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
-      map.set(date, row[1].trim());
-    }
-  });
-  tournamentNamesCache = map;
-  tournamentNamesTs = Date.now();
-  return map;
-}
-
-
-
-
+// Все турниры игрока за всё время
 app.get('/api/player-tournaments', async (req, res) => {
   const { nickname } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
   try {
-    const newLines = await fetchSheetLines(NEW_SPREADSHEET_ID, '0');
-    const tournamentMap = new Map();
-    newLines.slice(1).forEach(row => {
-      if (row[0] && row[1]) {
-        const date = WINNER_DATE_CORRECTIONS[row[0].trim()] || row[0].trim();
-        tournamentMap.set(date, row[1].trim());
-      }
-    });
-
-    const [winnersMap] = await Promise.all([loadWinnersMap()]);
+    const { winners: winnersMap, names: tournamentMap } = await loadNewTableMaps();
     const tournaments = [];
 
     for (const [key, sheet] of Object.entries(SHEETS)) {
@@ -825,7 +775,7 @@ app.get('/api/player-tournaments', async (req, res) => {
       const { nameIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
 
-      const playerRow = dataRows.find(cols => normalize(resolveName(cols[nameIdx])) === normalize(nickname));
+      const playerRow = findPlayerRow(dataRows, nameIdx, nickname);
       if (!playerRow) continue;
 
       const year = SHEET_YEAR[key];
@@ -838,7 +788,7 @@ app.get('/api/player-tournaments', async (req, res) => {
         if (!dateISO) continue;
 
         const actualWinner = winnersMap.get(dateISO);
-        const isWinner = actualWinner && normalize(resolveName(actualWinner)) === normalize(nickname);
+        const isWinner = actualWinner && matchesNick(actualWinner, nickname);
 
         tournaments.push({
           dateISO,
@@ -864,14 +814,12 @@ app.get('/api/player-tournaments', async (req, res) => {
   }
 });
 
+// Статистика клуба
 app.get('/api/club-stats', async (req, res) => {
   try {
-    const [winnersMap, newLines] = await Promise.all([
-      loadWinnersMap(),
-      fetchSheetLines(NEW_SPREADSHEET_ID, '0'),
-    ]);
+    const winnersMap = await loadWinnersMap();
 
-    // Победы по игрокам (из таблицы 2)
+    // Победы по игрокам (из новой таблицы)
     const winsCount = {};
     winnersMap.forEach(winner => {
       if (HIDDEN_PLAYERS.has(normalize(winner))) return;
@@ -879,11 +827,11 @@ app.get('/api/club-stats', async (req, res) => {
     });
     const champion = Object.entries(winsCount).sort((a, b) => b[1] - a[1])[0];
 
-    // Статистика из таблицы 1
+    // Статистика из рейтинговых листов
     let totalGames = 0, totalParticipations = 0, bestResult = 0, bestResultPlayer = '';
     const playerGamesCount = {};
 
-    for (const [key, sheet] of Object.entries(SHEETS)) {
+    for (const sheet of Object.values(SHEETS)) {
       const lines = await fetchSheetLines(sheet.id, sheet.gid);
       const { nameIdx, dateCols } = detectSheetStructure(lines);
       const dataRows = lines.slice(2);
@@ -905,12 +853,10 @@ app.get('/api/club-stats', async (req, res) => {
     }
 
     const mostActive = Object.entries(playerGamesCount).sort((a, b) => b[1] - a[1])[0];
-    const totalPlayers = Object.keys(playerGamesCount).length;
-    const totalTournaments = winnersMap.size;
 
     res.json({
-      totalTournaments,
-      totalPlayers,
+      totalTournaments: winnersMap.size,
+      totalPlayers: Object.keys(playerGamesCount).length,
       totalGames,
       totalParticipations,
       bestResult,
@@ -923,6 +869,7 @@ app.get('/api/club-stats', async (req, res) => {
   }
 });
 
+// --- Подсказка ника при регистрации ---
 
 // Расстояние Левенштейна
 function levenshtein(a, b) {
