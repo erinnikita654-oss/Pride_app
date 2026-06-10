@@ -27,6 +27,7 @@ const endpoints = [
   '/api/player-overall?nickname=' + encodeURIComponent('Начальник Голубей'),
   '/api/player-overall',
   '/api/legends',
+  '/api/club-averages',
   '/api/game-results?col=5&month=may',
   '/api/game-results?col=999&month=may',
   '/api/game-results',

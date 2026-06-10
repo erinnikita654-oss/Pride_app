@@ -895,6 +895,31 @@ app.get('/api/club-stats', async (req, res) => {
   }
 });
 
+// Среднее очков за игру по клубу для каждого месяца (для сравнения на графике игрока).
+// Ответ: { monthKey: avgPpg } — сумма всех очков месяца / число всех участий.
+app.get('/api/club-averages', async (req, res) => {
+  try {
+    const result = {};
+    for (const [key, sheet] of Object.entries(SHEETS)) {
+      const lines = await fetchSheetLines(sheet.id, sheet.gid);
+      const { nameIdx, dateCols } = detectSheetStructure(lines);
+      let sum = 0, games = 0;
+      lines.slice(2).forEach(cols => {
+        const name = resolveName(cols[nameIdx]);
+        if (!name || HIDDEN_PLAYERS.has(normalize(name))) return;
+        for (const { idx } of dateCols) {
+          const pts = parseInt(cols[idx]) || 0;
+          if (pts > 0) { sum += pts; games++; }
+        }
+      });
+      result[key] = games > 0 ? Math.round(sum / games) : 0;
+    }
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // --- Подсказка ника при регистрации ---
 
 // Расстояние Левенштейна

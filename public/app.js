@@ -504,8 +504,12 @@ async function openProgressChart(nickname, from = 'overall') {
   if (progressChartAvgInstance) { progressChartAvgInstance.destroy(); progressChartAvgInstance = null; }
 
   try {
-    const res = await fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`);
+    const [res, clubRes] = await Promise.all([
+      fetch(`/api/player-overall?nickname=${encodeURIComponent(nickname)}`),
+      fetch('/api/club-averages'),
+    ]);
     const d = await res.json();
+    const clubMap = await clubRes.json().catch(() => ({}));
 
     if (!d.months || !d.months.length) return;
 
@@ -515,6 +519,7 @@ async function openProgressChart(nickname, from = 'overall') {
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
     const avg = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
+    const clubAvg = ordered.map(m => clubMap[m.key] ?? null);
 
     // Накопительное среднее: суммарные очки / суммарные игры до каждого месяца
     let cumPoints = 0, cumGames = 0;
@@ -609,6 +614,18 @@ async function openProgressChart(nickname, from = 'overall') {
             borderWidth: 2,
             borderDash: [6, 3],
             pointBackgroundColor: '#9b59b6',
+            pointRadius: 3,
+            tension: 0.3,
+            fill: false,
+          },
+          {
+            label: 'Среднее по клубу',
+            data: clubAvg,
+            borderColor: '#5dade2',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [2, 3],
+            pointBackgroundColor: '#5dade2',
             pointRadius: 3,
             tension: 0.3,
             fill: false,
