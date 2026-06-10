@@ -51,7 +51,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 
 // --- Все прошедшие игры ---
 
-let allGamesMonth = 'may';
+let allGamesMonth = 'june';
 
 document.getElementById('btn-all-games').addEventListener('click', () => {
   hideAllScreens();
@@ -272,7 +272,7 @@ async function loadPastGames() {
 let gameResultsFrom = 'games';
 let playerOverallFrom = 'players';
 
-async function openGameResults(colIndex, label, from = 'games', month = 'may') {
+async function openGameResults(colIndex, label, from = 'games', month = 'june') {
   track('game_results_view', { label, month, from });
   gameResultsFrom = from;
   hideAllScreens();
@@ -319,7 +319,7 @@ async function openGameResults(colIndex, label, from = 'games', month = 'may') {
 
 // --- Рейтинг ---
 
-let currentMonth = 'may';
+let currentMonth = 'june';
 let allPlayers = [];
 
 document.getElementById('rating-month-select').addEventListener('change', e => {

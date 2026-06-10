@@ -32,6 +32,7 @@ const supabase = createClient(
 const OLD_SPREADSHEET_ID = '1t92y6HNg9RPPBENU6ydda8KqJoCSVRDEIZmDwjk0Jn0';
 
 const SHEETS = {
+  june:          { id: OLD_SPREADSHEET_ID, gid: '1627150203' },
   may:           { id: OLD_SPREADSHEET_ID, gid: '675526994' },
   april:         { id: OLD_SPREADSHEET_ID, gid: '321291646' },
   march:         { id: OLD_SPREADSHEET_ID, gid: '118856136' },
@@ -55,6 +56,7 @@ const sheetsAuth = new google.auth.GoogleAuth({
 const sheetsApi = google.sheets({ version: 'v4', auth: sheetsAuth });
 
 const MONTH_NAMES = {
+  june: 'Июнь 2026',
   may: 'Май 2026', april: 'Апрель 2026', march: 'Март 2026',
   february2026: 'Февраль 2026', january2026: 'Январь 2026',
   december2025: 'Декабрь 2025', november2025: 'Ноябрь 2025',
@@ -62,7 +64,10 @@ const MONTH_NAMES = {
   august2025: 'Август 2025', july2025: 'Июль 2025',
   june2025: 'Июнь 2025', may2025: 'Май 2025', april2025: 'Апрель 2025',
 };
-const MONTH_ORDER = ['may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
+// Текущий месяц — дефолт для всех экранов; при переходе на новый месяц поменять здесь
+const CURRENT_MONTH = 'june';
+
+const MONTH_ORDER = ['june', 'may', 'april', 'march', 'february2026', 'january2026', 'december2025', 'november2025', 'october2025', 'september2025', 'august2025', 'july2025', 'june2025', 'may2025', 'april2025'];
 
 const normalize = s => (s || '').trim().toLowerCase();
 
@@ -365,7 +370,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
   let monthPoints = 0, gamesPlayed = 0, bestGame = 0, rank = null, foundInSheet = false;
 
   try {
-    const lines = await fetchSheetLines(SHEETS.may.id, SHEETS.may.gid);
+    const lines = await fetchSheetLines(SHEETS[CURRENT_MONTH].id, SHEETS[CURRENT_MONTH].gid);
     const { nameIdx, totalIdx, dateCols } = detectSheetStructure(lines);
     const dataRows = lines.slice(2);
 
@@ -395,7 +400,7 @@ app.get('/api/profile-stats/:telegramId', async (req, res) => {
 // --- Рейтинг (Google Sheets) ---
 
 app.get('/api/rating', async (req, res) => {
-  const sheet = SHEETS[req.query.month] || SHEETS.may;
+  const sheet = SHEETS[req.query.month] || SHEETS[CURRENT_MONTH];
   try {
     const lines = await fetchSheetLines(sheet.id, sheet.gid);
     const { nameIdx, totalIdx } = detectSheetStructure(lines);
@@ -416,8 +421,8 @@ app.get('/api/player-stats', async (req, res) => {
   const { nickname, month } = req.query;
   if (!nickname) return res.status(400).json({ error: 'Укажите nickname' });
 
-  const monthKey = month || 'may';
-  const sheet = SHEETS[monthKey] || SHEETS.may;
+  const monthKey = month || CURRENT_MONTH;
+  const sheet = SHEETS[monthKey] || SHEETS[CURRENT_MONTH];
   try {
     const [lines, winnersMap, namesMap] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
@@ -469,7 +474,7 @@ app.get('/api/player-stats', async (req, res) => {
 app.get('/api/past-games', async (req, res) => {
   try {
     const [lines, namesMap] = await Promise.all([
-      fetchSheetLines(SHEETS.may.id, SHEETS.may.gid),
+      fetchSheetLines(SHEETS[CURRENT_MONTH].id, SHEETS[CURRENT_MONTH].gid),
       loadTournamentNamesMap(),
     ]);
     const { dateCols } = detectSheetStructure(lines);
@@ -477,7 +482,7 @@ app.get('/api/past-games', async (req, res) => {
     const withData = dateCols
       .filter(({ idx }) => lines.slice(2).some(row => parseInt(row[idx]) > 0))
       .map(({ label, idx }) => {
-        const dateISO = ruDateToISO(label, SHEET_YEAR.may);
+        const dateISO = ruDateToISO(label, SHEET_YEAR[CURRENT_MONTH]);
         return { label, colIndex: idx, tournamentName: namesMap.get(dateISO) || null };
       });
 
@@ -489,8 +494,8 @@ app.get('/api/past-games', async (req, res) => {
 
 // Все прошедшие игры за выбранный месяц
 app.get('/api/all-past-games', async (req, res) => {
-  const monthKey = req.query.month || 'may';
-  const sheet = SHEETS[monthKey] || SHEETS.may;
+  const monthKey = req.query.month || CURRENT_MONTH;
+  const sheet = SHEETS[monthKey] || SHEETS[CURRENT_MONTH];
   try {
     const [lines, namesMap] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
@@ -687,8 +692,8 @@ app.get('/api/game-results', async (req, res) => {
   const colIndex = parseInt(req.query.col);
   if (isNaN(colIndex)) return res.status(400).json({ error: 'Укажите col' });
 
-  const monthKey = req.query.month || 'may';
-  const sheet = SHEETS[monthKey] || SHEETS.may;
+  const monthKey = req.query.month || CURRENT_MONTH;
+  const sheet = SHEETS[monthKey] || SHEETS[CURRENT_MONTH];
   try {
     const [lines, winnersMap, namesMap] = await Promise.all([
       fetchSheetLines(sheet.id, sheet.gid),
@@ -727,7 +732,7 @@ app.get('/api/game-results', async (req, res) => {
 const NEW_SPREADSHEET_ID = '1LMiGLPmt2GQduqCg4SpWv5-9jUHKb5BIVw2PM5OjG7w';
 
 const SHEET_YEAR = {
-  may: 2026, april: 2026, march: 2026,
+  june: 2026, may: 2026, april: 2026, march: 2026,
   february2026: 2026, january2026: 2026,
   december2025: 2025, november2025: 2025, october2025: 2025,
   september2025: 2025, august2025: 2025, july2025: 2025,
