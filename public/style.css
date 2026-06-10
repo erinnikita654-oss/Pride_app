@@ -210,10 +210,52 @@ body::before {
 }
 
 .loading {
-  text-align: center;
-  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 52px 20px;
+  /* прячем исходный текст узла ("Загрузка...") — его заменяет покерная подпись ниже */
+  font-size: 0;
   color: var(--hint);
+}
+
+/* Игральная карта со сменой мастей */
+.loading::before {
+  content: '♠';
+  font-size: 48px;
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  animation: loadingSuit 2s steps(1, end) infinite, loadingBounce 0.55s ease-in-out infinite alternate;
+}
+
+/* Ротация покерных фраз */
+.loading::after {
+  content: 'Тасуем колоду…';
   font-size: 14px;
+  letter-spacing: 0.3px;
+  color: var(--hint);
+  animation: loadingPhrase 6s steps(1, end) infinite;
+}
+
+@keyframes loadingSuit {
+  0%,  100% { content: '♠'; color: var(--gold); }
+  25%       { content: '♥'; color: #d14b3d; }
+  50%       { content: '♦'; color: #d14b3d; }
+  75%       { content: '♣'; color: var(--gold); }
+}
+
+@keyframes loadingBounce {
+  from { transform: translateY(0)    rotate(-5deg); }
+  to   { transform: translateY(-12px) rotate(5deg); }
+}
+
+@keyframes loadingPhrase {
+  0%,   33%  { content: 'Тасуем колоду…'; }
+  34%,  66%  { content: 'Раздаём карты…'; }
+  67%, 100%  { content: 'Считаем фишки…'; }
 }
 
 /* Секция */
