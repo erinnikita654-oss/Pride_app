@@ -1254,20 +1254,26 @@ body::before {
 
 .progress-btn {
   width: 100%;
-  padding: 10px;
-  margin: 12px 0 4px;
-  background: transparent;
-  border: 1px solid var(--gold-border);
-  border-radius: 10px;
-  color: var(--gold);
-  font-size: 14px;
-  font-weight: 600;
+  padding: 14px;
+  margin: 18px 0;
+  background: linear-gradient(135deg, #e8c87a, var(--gold));
+  border: none;
+  border-radius: 12px;
+  color: #1a1208;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s;
+  box-shadow: 0 4px 14px rgba(201, 162, 39, 0.35);
+  transition: transform 0.15s, box-shadow 0.2s;
 }
 
 .progress-btn:hover {
-  background: rgba(201,162,39,0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(201, 162, 39, 0.5);
+}
+
+.progress-btn:active {
+  transform: translateY(0);
 }
 
 .past-game-tournament {
