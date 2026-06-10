@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readFileSync } from 'fs';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
@@ -83,6 +84,18 @@ const HIDDEN_PLAYERS = new Set(['klu4']);
 
 // Исправления опечаток в датах новой таблицы
 const WINNER_DATE_CORRECTIONS = { '03.02.2026': '02.02.2026' };
+
+// Ручные записи турниров — опережающий источник, пока официальная таблица отстаёт.
+// Формат: [{ date: "ДД.ММ.ГГГГ", name: "Название", winner: "Ник" }].
+// Официальная таблица ВСЕГДА перекрывает: ручная запись влияет только на даты,
+// которых ещё нет в официальной (см. loadNewTableMaps). Когда официальные данные
+// появляются — ручная автоматически перестаёт учитываться, её можно удалить из файла.
+let MANUAL_TOURNAMENTS = [];
+try {
+  MANUAL_TOURNAMENTS = JSON.parse(readFileSync(join(__dirname, 'manual-tournaments.json'), 'utf8'));
+} catch (e) {
+  MANUAL_TOURNAMENTS = [];
+}
 
 // --- Нормализация имён ---
 
@@ -320,6 +333,19 @@ async function loadNewTableMaps() {
       winners.set(date, resolveName(row[2].trim()));
     }
   });
+
+  // Подмешиваем ручные записи только для того, чего ещё нет в официальной таблице.
+  // Название и победитель проверяются раздельно: официальное название может уже быть,
+  // а победитель — ещё нет (тогда подтянем победителя из ручной записи).
+  for (const t of MANUAL_TOURNAMENTS) {
+    if (!t.date) continue;
+    const date = (WINNER_DATE_CORRECTIONS[t.date.trim()] || t.date.trim());
+    if (t.name && !names.has(date)) names.set(date, t.name.trim());
+    if (t.winner && !winners.has(date) && !WINNER_EXCLUDE.some(e => (t.name || '').toUpperCase().includes(e))) {
+      winners.set(date, resolveName(t.winner.trim()));
+    }
+  }
+
   newTableCache = { winners, names };
   newTableTs = Date.now();
   return newTableCache;
