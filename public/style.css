@@ -43,7 +43,7 @@ body::before {
   pointer-events: none;
 }
 
-.app, .bottom-nav, #screen-nickname, #toast {
+.app, .bottom-nav, #screen-nickname {
   position: relative;
   z-index: 1;
 }
