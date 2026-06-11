@@ -481,6 +481,7 @@ let progressFrom = 'overall';
 let progressMonths = null;
 let progressClubMap = {};
 let progressPeriod = 6;
+let progressClubMode = 'all'; // 'all' — весь клуб, 'top' — ТОП-30 по очкам месяца
 
 document.getElementById('progress-back-btn').addEventListener('click', () => {
   hideAllScreens();
@@ -524,6 +525,8 @@ function renderProgressCharts(period) {
   progressPeriod = period;
   document.querySelectorAll('.period-btn').forEach(b =>
     b.classList.toggle('active', Number(b.dataset.period) === period));
+  document.querySelectorAll('.club-avg-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.mode === progressClubMode));
 
   if (progressChartInstance) { progressChartInstance.destroy(); progressChartInstance = null; }
   if (progressChartAvgInstance) { progressChartAvgInstance.destroy(); progressChartAvgInstance = null; }
@@ -534,7 +537,12 @@ function renderProgressCharts(period) {
     const points = ordered.map(m => m.monthTotal);
     const wins   = ordered.map(m => m.wins);
     const avg = ordered.map(m => m.gamesPlayed > 0 ? Math.round(m.monthTotal / m.gamesPlayed) : 0);
-    const clubAvg = ordered.map(m => progressClubMap[m.key] ?? null);
+    // Поддержка старого формата (число) и нового ({ all, top })
+    const clubAvg = ordered.map(m => {
+      const v = progressClubMap[m.key];
+      if (v == null) return null;
+      return typeof v === 'number' ? v : (v[progressClubMode] ?? null);
+    });
 
     // Накопительное среднее: суммарные очки / суммарные игры до каждого месяца
     let cumPoints = 0, cumGames = 0;
@@ -635,7 +643,7 @@ function renderProgressCharts(period) {
             fill: false,
           },
           {
-            label: 'Среднее по клубу',
+            label: progressClubMode === 'top' ? 'Среднее ТОП-30' : 'Среднее по клубу',
             data: clubAvg,
             borderColor: '#5dade2',
             backgroundColor: 'transparent',
@@ -675,6 +683,15 @@ document.querySelectorAll('.period-btn').forEach(btn => {
     const p = Number(btn.dataset.period);
     track('progress_period_change', { period: p });
     renderProgressCharts(p);
+  });
+});
+
+// Переключатель базы сравнения (весь клуб / ТОП-30 по очкам месяца)
+document.querySelectorAll('.club-avg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    progressClubMode = btn.dataset.mode;
+    track('progress_club_mode_change', { mode: progressClubMode });
+    renderProgressCharts(progressPeriod);
   });
 });
 
