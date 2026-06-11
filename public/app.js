@@ -659,6 +659,7 @@ function renderProgressCharts(period) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
           legend: { labels: { color: '#e0d5c5', font: { size: 13 } } },
         },
