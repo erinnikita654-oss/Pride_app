@@ -513,15 +513,23 @@ app.post('/api/profile/set-nickname', async (req, res) => {
     return res.status(400).json({ error: 'Ник слишком короткий' });
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selErr } = await supabase
     .from('users').select('id').eq('telegram_id', telegramId).single();
+  // .single() отдаёт PGRST116, когда строки нет — это не сбой, а ветка нового пользователя.
+  if (selErr && selErr.code !== 'PGRST116') {
+    console.error('[set-nickname] select error:', selErr.message);
+    return res.status(500).json({ error: 'База недоступна, попробуйте позже' });
+  }
 
-  if (existing) {
-    await supabase.from('users')
-      .update({ first_name: nickname.trim() }).eq('telegram_id', telegramId);
-  } else {
-    await supabase.from('users')
-      .insert({ telegram_id: telegramId, username, first_name: nickname.trim(), rating: 0 });
+  const { error: writeErr } = existing
+    ? await supabase.from('users')
+        .update({ first_name: nickname.trim() }).eq('telegram_id', telegramId)
+    : await supabase.from('users')
+        .insert({ telegram_id: telegramId, username, first_name: nickname.trim(), rating: 0 });
+
+  if (writeErr) {
+    console.error('[set-nickname] write error:', writeErr.message);
+    return res.status(500).json({ error: 'Не удалось сохранить ник, попробуйте позже' });
   }
 
   res.json({ success: true });
@@ -1023,7 +1031,23 @@ async function warmCache() {
   console.log(`Кэш прогрет за ${Date.now() - t0} ms (${Object.keys(SHEETS).length} листов + таблица победителей)`);
 }
 
+// Keep-alive Supabase: free-tier проект засыпает после ~7 дней без запросов к нему.
+// Часть функций (рейтинг/легенды/графики) идёт из Google Sheets и Supabase не трогает,
+// поэтому без периодического пинга база может уснуть в тихий по регистрациям период.
+const SUPABASE_KEEPALIVE_MS = 6 * 60 * 60_000; // 6 часов
+async function supabaseKeepAlive() {
+  try {
+    const { error } = await supabase.from('users').select('id').limit(1);
+    if (error) throw error;
+    console.log(`[keepalive] Supabase ok ${new Date().toISOString()}`);
+  } catch (e) {
+    console.error('[keepalive] Supabase error:', e.message);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   warmCache();
+  supabaseKeepAlive();
+  setInterval(supabaseKeepAlive, SUPABASE_KEEPALIVE_MS);
 });
