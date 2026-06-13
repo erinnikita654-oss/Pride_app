@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { google } from 'googleapis';
 import Rollbar from 'rollbar';
+import swaggerUi from 'swagger-ui-express';
+import { openapiSpec } from './openapi.js';
 
 dotenv.config();
 
@@ -22,6 +24,15 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
+
+// Swagger-документация API — только если включена флагом (по умолчанию скрыта на проде).
+if (process.env.DOCS_ENABLED === '1') {
+  app.get('/api/openapi.json', (req, res) => res.json(openapiSpec));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
+    customSiteTitle: 'PRIDE API — документация',
+  }));
+  console.log('Swagger-документация включена: /api/docs');
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

@@ -12,6 +12,7 @@
     "express": "^4.18.2",
     "googleapis": "^173.0.0",
     "node-telegram-bot-api": "^0.66.0",
-    "rollbar": "^3.1.0"
+    "rollbar": "^3.1.0",
+    "swagger-ui-express": "^5.0.1"
   }
 }
