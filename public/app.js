@@ -498,6 +498,8 @@ document.getElementById('open-progress-btn').addEventListener('click', () => {
 
 async function openProgressChart(nickname, from = 'overall') {
   track('progress_chart_view', { from });
+  // Дублируем как tab_view, чтобы график попадал в инсайт «Tab popularity» рядом с вкладками
+  track('tab_view', { tab: 'progress' });
   progressFrom = from;
   hideAllScreens();
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
