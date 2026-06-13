@@ -68,6 +68,8 @@ snapshot.mjs        — инструмент регрессионного тес
 
 Таблицы: `users` (telegram_id, username, first_name = ник, rating), `games` + `registrations` (+вью `games_with_count`) — запись на предстоящие игры.
 
+**Keep-alive:** free-tier проект Supabase засыпает после ~7 дней без запросов к нему. Так как рейтинг/легенды/графики идут из Google Sheets и Supabase не трогают, в тихий по регистрациям период база может уснуть (симптом: 500 на `/api/games`, `set-nickname` не сохраняет, `/api/profile` → null). Чтобы этого не было, сервер шлёт лёгкий запрос к `users` при старте и далее раз в 6 часов (`supabaseKeepAlive`, лог `[keepalive] Supabase ok`). Если база всё же усыплена — нажать **Restore** в дашборде Supabase (URL/ключи после восстановления не меняются).
+
 ## Ключевая бизнес-логика
 
 ### Нормализация ников (`ALIASES`, `resolveName`)
@@ -152,7 +154,7 @@ snapshot.mjs        — инструмент регрессионного тес
 | `DELETE /api/games/:id/register` | Отмена записи |
 | `GET /api/my-registrations/:telegramId` | id игр, на которые записан |
 | `GET /api/profile/:telegramId` | `{ first_name, username }` или null |
-| `POST /api/profile/set-nickname` | Установка ника (мин. 2 символа) |
+| `POST /api/profile/set-nickname` | Установка ника (мин. 2 символа); upsert по `telegram_id`. При ошибке записи в Supabase отдаёт **500** (а не «молчаливый успех») — чтобы сбой БД был виден пользователю и в Rollbar, а не зацикливал экран ввода ника |
 | `GET /api/profile-stats/:telegramId` | Краткая статистика текущего месяца для профиля: очки, игры, лучший результат, место в рейтинге |
 
 ## Фронтенд
