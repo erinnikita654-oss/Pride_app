@@ -878,6 +878,7 @@ async function initAuth() {
     const saved = localStorage.getItem(WEB_NICKNAME_KEY);
     if (saved) {
       clubNickname = saved;
+      maybeShowProgressPromo();
     } else {
       showNicknameScreen();
     }
@@ -892,6 +893,7 @@ async function initAuth() {
 
   if (profile && profile.first_name) {
     clubNickname = profile.first_name;
+    maybeShowProgressPromo();
   } else {
     showNicknameScreen();
   }
@@ -1219,6 +1221,40 @@ document.getElementById('nickname-btn').addEventListener('click', async () => {
     }
   } catch (e) {
     await saveNickname(nickname);
+  }
+});
+
+// --- Промо графика прогресса (показываем один раз всем вошедшим) ---
+const PROGRESS_PROMO_KEY = 'pride_progress_promo_seen';
+
+function maybeShowProgressPromo() {
+  if (!clubNickname) return;
+  if (localStorage.getItem(PROGRESS_PROMO_KEY)) return;
+  document.getElementById('progress-promo').classList.remove('hidden');
+  localStorage.setItem(PROGRESS_PROMO_KEY, '1'); // показываем ровно один раз
+  track('progress_promo_shown');
+}
+
+function dismissProgressPromo() {
+  document.getElementById('progress-promo').classList.add('hidden');
+}
+
+document.getElementById('promo-open-btn').addEventListener('click', () => {
+  track('progress_promo_click');
+  dismissProgressPromo();
+  if (clubNickname) openProgressChart(clubNickname, 'promo');
+});
+
+document.getElementById('promo-later-btn').addEventListener('click', () => {
+  track('progress_promo_dismiss');
+  dismissProgressPromo();
+});
+
+// Тап по затемнению вне карточки — закрыть
+document.getElementById('progress-promo').addEventListener('click', (e) => {
+  if (e.target.id === 'progress-promo') {
+    track('progress_promo_dismiss');
+    dismissProgressPromo();
   }
 });
 
