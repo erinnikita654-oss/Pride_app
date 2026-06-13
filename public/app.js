@@ -1231,31 +1231,30 @@ function maybeShowProgressPromo() {
   if (!clubNickname) return;
   if (localStorage.getItem(PROGRESS_PROMO_KEY)) return;
   document.getElementById('progress-promo').classList.remove('hidden');
-  localStorage.setItem(PROGRESS_PROMO_KEY, '1'); // показываем ровно один раз
+  localStorage.setItem(PROGRESS_PROMO_KEY, 'shown'); // показываем ровно один раз
   track('progress_promo_shown');
 }
 
-function dismissProgressPromo() {
+// Закрыть промо, запомнив выбранное действие: 'open' | 'later' | 'backdrop'.
+// Действие пишем и в флаг localStorage (перетирает 'shown'), и в аналитику.
+function closeProgressPromo(action) {
   document.getElementById('progress-promo').classList.add('hidden');
+  localStorage.setItem(PROGRESS_PROMO_KEY, action);
+  track('progress_promo_action', { action });
 }
 
 document.getElementById('promo-open-btn').addEventListener('click', () => {
-  track('progress_promo_click');
-  dismissProgressPromo();
+  closeProgressPromo('open');
   if (clubNickname) openProgressChart(clubNickname, 'promo');
 });
 
 document.getElementById('promo-later-btn').addEventListener('click', () => {
-  track('progress_promo_dismiss');
-  dismissProgressPromo();
+  closeProgressPromo('later');
 });
 
 // Тап по затемнению вне карточки — закрыть
 document.getElementById('progress-promo').addEventListener('click', (e) => {
-  if (e.target.id === 'progress-promo') {
-    track('progress_promo_dismiss');
-    dismissProgressPromo();
-  }
+  if (e.target.id === 'progress-promo') closeProgressPromo('backdrop');
 });
 
 initAuth();
