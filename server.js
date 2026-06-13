@@ -237,7 +237,12 @@ function ruDateToISO(label, year) {
 
 // --- Чтение листов ---
 
-const CACHE_TTL = 300_000; // 5 минут
+// Короткий TTL — для изменяемых данных: лист текущего месяца и приватная таблица победителей.
+const CACHE_TTL = Number(process.env.CACHE_TTL_MS) || 300_000; // 5 минут
+// Длинный TTL — для исторических месяцев. Результаты прошедших турниров неизменны,
+// значит листы прошлых месяцев заморожены навсегда; перекачивать их каждые 5 минут незачем.
+// Конечный (не вечный) TTL оставляет окно, чтобы редкая ручная правка старого листа долетела сама.
+const HISTORICAL_TTL = Number(process.env.HISTORICAL_TTL_MS) || 12 * 60 * 60_000; // 12 часов
 
 // Кэш листов: { "spreadsheetId:gid" -> { lines, ts } }
 const sheetCache = {};
@@ -265,7 +270,12 @@ async function getSheetTitle(spreadsheetId, gid) {
 async function fetchSheetLines(spreadsheetId, gid) {
   const cacheKey = `${spreadsheetId}:${gid}`;
   const cached = sheetCache[cacheKey];
-  if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.lines;
+  // Лист текущего месяца меняется (добавляются турниры) → короткий TTL.
+  // Приватная таблица победителей тоже изменяема → короткий TTL.
+  // Прочие (исторические) листы старой таблицы заморожены → длинный TTL.
+  const isCurrentMonthSheet = spreadsheetId === OLD_SPREADSHEET_ID && gid === SHEETS[CURRENT_MONTH].gid;
+  const ttl = (spreadsheetId === OLD_SPREADSHEET_ID && !isCurrentMonthSheet) ? HISTORICAL_TTL : CACHE_TTL;
+  if (cached && Date.now() - cached.ts < ttl) return cached.lines;
 
   let lines;
 
@@ -1003,4 +1013,17 @@ app.get('/api/suggest-nickname', async (req, res) => {
 
 app.use(rollbar.errorHandler());
 
-app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
+// Прогрев кэша при старте: тянем все листы параллельно один раз, чтобы первый
+// пользователь после деплоя не ждал последовательную загрузку всех месяцев.
+async function warmCache() {
+  const t0 = Date.now();
+  const tasks = Object.values(SHEETS).map(s => fetchSheetLines(s.id, s.gid).catch(() => {}));
+  tasks.push(loadNewTableMaps().catch(() => {}));
+  await Promise.allSettled(tasks);
+  console.log(`Кэш прогрет за ${Date.now() - t0} ms (${Object.keys(SHEETS).length} листов + таблица победителей)`);
+}
+
+app.listen(PORT, () => {
+  console.log(`Сервер запущен на порту ${PORT}`);
+  warmCache();
+});
