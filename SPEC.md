@@ -163,13 +163,15 @@ snapshot.mjs        — инструмент регрессионного тес
 
 Идентификация: внутри Telegram — `window.Telegram.WebApp` (telegram id), в браузере — ник в `localStorage` (`pride_nickname`).
 
+**Промо графика прогресса** (`#progress-promo`): bottom-sheet «Посмотри свой прогресс» с бейджем NEW. Показывается **один раз** всем вошедшим (с известным ником) при старте — `maybeShowProgressPromo()` в конце `initAuth`. Факт показа и выбранное действие хранятся в `localStorage` (`pride_progress_promo_seen`: `shown` → затем `open` / `later` / `backdrop`). Кнопка «Открыть график» открывает экран прогресса (`openProgressChart(nick, 'promo')`), «Позже» и тап по затемнению — закрывают. Флаг клиентский (на устройство/браузер), не на аккаунт.
+
 ## Telegram-бот
 
 `/start` — приветствие + inline-кнопка «Открыть клуб» (web_app, url из `APP_URL`); `/help` — список команд. Long polling.
 
 ## Аналитика и мониторинг
 
-- **PostHog** (`app_opened`, `tab_view`, `game_results_view`, `player_stats_view`, `progress_chart_view`, `player_overall_view`, `my_tournaments_view`, `profile_view`).
+- **PostHog** (`app_opened`, `tab_view`, `game_results_view`, `player_stats_view`, `progress_chart_view` — с полем `from`, в т.ч. `promo`; `player_overall_view`, `my_tournaments_view`, `profile_view`, `progress_period_change`, `progress_club_mode_change`; промо графика прогресса — `progress_promo_shown` на показ и `progress_promo_action` с полем `action` = `open` / `later` / `backdrop`).
 - **Rollbar** — ошибки бэкенда (uncaught + express errorHandler) и фронтенда.
 
 ## Переменные окружения (.env)
