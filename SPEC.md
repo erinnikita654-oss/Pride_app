@@ -171,7 +171,7 @@ snapshot.mjs        — инструмент регрессионного тес
 
 ## Аналитика и мониторинг
 
-- **PostHog** (`app_opened`, `tab_view`, `game_results_view`, `player_stats_view`, `progress_chart_view` — с полем `from`, в т.ч. `promo`; `player_overall_view`, `my_tournaments_view`, `profile_view`, `progress_period_change`, `progress_club_mode_change`; промо графика прогресса — `progress_promo_shown` на показ и `progress_promo_action` с полем `action` = `open` / `later` / `backdrop`).
+- **PostHog** (`app_opened`, `tab_view` — поле `tab` (`games`/`rating`/`legends`/`players`, а также `progress` при открытии графика прогресса — чтобы он попадал в инсайт «Tab popularity» рядом с вкладками); `game_results_view`, `player_stats_view`, `progress_chart_view` — с полем `from`, в т.ч. `promo`; `player_overall_view`, `my_tournaments_view`, `profile_view`, `progress_period_change`, `progress_club_mode_change`; промо графика прогресса — `progress_promo_shown` на показ и `progress_promo_action` с полем `action` = `open` / `later` / `backdrop`).
 - **Rollbar** — ошибки бэкенда (uncaught + express errorHandler) и фронтенда.
 
 ## Переменные окружения (.env)
