@@ -600,13 +600,17 @@ function renderProgressCharts(period) {
           },
           y: {
             position: 'left',
+            beginAtZero: true,
+            min: 0,
             ticks: { color: '#c9a227' },
             grid: { color: 'rgba(201,162,39,0.1)' },
             title: { display: true, text: 'Очки', color: '#c9a227' },
           },
           y1: {
             position: 'right',
-            ticks: { color: '#e74c3c', stepSize: 1 },
+            beginAtZero: true,
+            min: 0,
+            ticks: { color: '#e74c3c', stepSize: 1, precision: 0 },
             grid: { drawOnChartArea: false },
             title: { display: true, text: 'Победы', color: '#e74c3c' },
           },
