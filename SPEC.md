@@ -17,6 +17,8 @@ snapshot.mjs        — инструмент регрессионного тес
 
 **Стек:** Node.js (ES modules), Express, node-telegram-bot-api, Supabase (PostgreSQL), Google Sheets API, Chart.js (графики), PostHog (продуктовая аналитика), Rollbar (ошибки).
 
+**Хостинг:** Railway — боевой адрес `https://prideapp-production.up.railway.app/`. Деплой автоматический с пуша в `main` (GitHub: `erinnikita654-oss/Pride_app`). Боевой `APP_URL` задаётся в переменных окружения Railway (в репозитории `.env` — локальный `localhost:3000`).
+
 ## Источники данных
 
 ### 1. Старая таблица — рейтинги (`OLD_SPREADSHEET_ID`)
