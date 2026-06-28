@@ -166,9 +166,9 @@ export function registerChallengeRoutes(app, deps) {
       }
     }
     // Уведомление 2: твой вызов приняли
-    const opName = await nickOf(ch.opponent_id);
-    const tLabel2 = await tournamentLabel(ch.tournament_id);
-    notify(ch.challenger_id, `✅ <b>${opName || 'Игрок'}</b> принял твой вызов!\n\nТурнир: ${tLabel2}\n\nДуэль начнётся!`);
+    const accName = await nickOf(ch.opponent_id);
+    const accLabel = await tournamentLabel(ch.tournament_id);
+    await notify(ch.challenger_id, `✅ <b>${accName || 'Игрок'}</b> принял твой вызов!\n\nТурнир: ${accLabel}\n\nДуэль начнётся!`);
     res.json({ success: true });
   });
 
@@ -184,9 +184,9 @@ export function registerChallengeRoutes(app, deps) {
       .update({ status: 'declined', responded_at: new Date().toISOString() }).eq('id', ch.id);
     if (error) return res.status(500).json({ error: error.message });
     // Уведомление 3: твой вызов отклонили
-    const opName3 = await nickOf(ch.opponent_id);
-    const tLabel3 = await tournamentLabel(ch.tournament_id);
-    notify(ch.challenger_id, `❌ <b>${opName3 || 'Игрок'}</b> отклонил твой вызов.\n\nТурнир: ${tLabel3}`);
+    const decName = await nickOf(ch.opponent_id);
+    const decLabel = await tournamentLabel(ch.tournament_id);
+    await notify(ch.challenger_id, `❌ <b>${decName || 'Игрок'}</b> отклонил твой вызов.\n\nТурнир: ${decLabel}`);
     res.json({ success: true });
   });
 
