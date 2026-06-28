@@ -45,7 +45,7 @@ function switchTab(target) {
   if (target === 'rating') loadRating();
   if (target === 'legends') loadLegends();
   if (target === 'players') loadAllPlayers();
-  if (target === 'challenges') loadChallenges();
+  if (target === 'challenges') { chMarkSeen(); loadChallenges(); }
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1294,14 +1294,23 @@ async function initChallenges() {
   chUpdateBadge();
 }
 
+const CH_SEEN_KEY = 'pride_ch_last_seen';
+
 async function chUpdateBadge() {
   if (!chConfig.challengesEnabled || !telegramId) return;
   try {
-    const inc = await (await fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`)).json();
+    const since = localStorage.getItem(CH_SEEN_KEY) || '1970-01-01T00:00:00Z';
+    const r = await (await fetch(`/api/challenges/unseen/${encodeURIComponent(telegramId)}?since=${encodeURIComponent(since)}`)).json();
     const badge = document.getElementById('ch-nav-badge');
-    if (Array.isArray(inc) && inc.length) { badge.textContent = inc.length; badge.classList.remove('hidden'); }
+    if (r.count > 0) { badge.textContent = r.count; badge.classList.remove('hidden'); }
     else badge.classList.add('hidden');
   } catch (e) {}
+}
+
+function chMarkSeen() {
+  localStorage.setItem(CH_SEEN_KEY, new Date().toISOString());
+  const badge = document.getElementById('ch-nav-badge');
+  badge?.classList.add('hidden');
 }
 
 async function loadChallenges() {
@@ -1311,16 +1320,18 @@ async function loadChallenges() {
   box.innerHTML = '<div class="loading">Загрузка...</div>';
   const arr = x => Array.isArray(x) ? x : [];
   try {
-    const [tournaments, incoming, mine, standings] = await Promise.all([
+    const [tournaments, incoming, mine, board, standings] = await Promise.all([
       fetch('/api/challenges/tournaments').then(r => r.json()).catch(() => []),
       fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
       fetch(`/api/challenges/mine/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
+      fetch('/api/challenges/board').then(r => r.json()).catch(() => []),
       fetch('/api/challenges/standings').then(r => r.json()).catch(() => []),
     ]);
     box.innerHTML =
       chRenderTournaments(arr(tournaments)) +
       chRenderIncoming(arr(incoming)) +
       chRenderMine(arr(mine)) +
+      chRenderBoard(arr(board)) +
       chRenderStandings(arr(standings));
     chUpdateBadge();
   } catch (e) {
@@ -1366,36 +1377,85 @@ function chOutcome(c) {
   return { my, opp, won };
 }
 
+function chCardMine(c) {
+  const iAmCh = String(c.challenger_id) === String(telegramId);
+  const other = iAmCh ? c.opponent_name : c.challenger_name;
+  let pill = '', extra = '';
+  if (c.status === 'pending') {
+    pill = '<span class="ch-pill ch-pill-wait">Ожидает ответа</span>';
+    extra = `<button class="ch-btn-out ch-cancel" data-id="${chEsc(c.id)}" style="margin-top:10px;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">Отозвать</button>`;
+  } else if (c.status === 'declined') {
+    pill = '<span class="ch-pill ch-pill-loss">Отклонён</span>';
+  } else if (c.status === 'cancelled') {
+    pill = '<span class="ch-pill ch-pill-void">Отозван</span>';
+  } else if (c.status === 'accepted') {
+    pill = '<span class="ch-pill ch-pill-acc">Принят · ждём результат</span>';
+  } else if (c.status === 'void') {
+    pill = '<span class="ch-pill ch-pill-void">Отмена (неявка)</span>';
+  } else if (c.status === 'resolved') {
+    const o = chOutcome(c);
+    const cls = o.won === 'win' ? 'ch-pill-win' : o.won === 'loss' ? 'ch-pill-loss' : 'ch-pill-draw';
+    const lbl = o.won === 'win' ? `Победа ${o.my}:${o.opp}` : o.won === 'loss' ? `Поражение ${o.my}:${o.opp}` : `Ничья ${o.my}:${o.opp}`;
+    pill = `<span class="ch-pill ${cls}">${lbl}</span>`;
+  }
+  return `<div class="ch-card"><div class="ch-row">
+    <div class="ch-vs">${chAva(other)}<div class="ch-meta">
+      <div class="ch-nm">ты <span class="sword">⚔️</span> ${chEsc(other)}</div>
+      <div class="ch-subt">${chEsc(c.games?.title || '')} · ${chFmtDate(c.games?.starts_at, c.games?.sheet_date)}</div>
+    </div></div>${pill}
+  </div>${extra}</div>`;
+}
+
 function chRenderMine(list) {
   const show = (list || []).filter(c =>
     c.status === 'accepted' || c.status === 'resolved' || c.status === 'void' ||
+    c.status === 'declined' || c.status === 'cancelled' ||
     (c.status === 'pending' && String(c.challenger_id) === String(telegramId)));
   let html = '<div class="ch-sec">Мои дуэли</div>';
   if (!show.length) return html + '<div class="ch-empty">Дуэлей пока нет</div>';
-  return html + show.map(c => {
-    const iAmCh = String(c.challenger_id) === String(telegramId);
-    const other = iAmCh ? c.opponent_name : c.challenger_name;
-    let pill = '', extra = '';
-    if (c.status === 'pending') {
-      pill = '<span class="ch-pill ch-pill-wait">Ожидает ответа</span>';
-      extra = `<button class="ch-btn-out ch-cancel" data-id="${chEsc(c.id)}" style="margin-top:10px;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">Отозвать</button>`;
-    } else if (c.status === 'accepted') {
-      pill = '<span class="ch-pill ch-pill-acc">Принят · ждём результат</span>';
-    } else if (c.status === 'void') {
-      pill = '<span class="ch-pill ch-pill-void">Отмена (неявка)</span>';
-    } else if (c.status === 'resolved') {
-      const o = chOutcome(c);
-      const cls = o.won === 'win' ? 'ch-pill-win' : o.won === 'loss' ? 'ch-pill-loss' : 'ch-pill-draw';
-      const lbl = o.won === 'win' ? `Победа ${o.my}:${o.opp}` : o.won === 'loss' ? `Поражение ${o.my}:${o.opp}` : `Ничья ${o.my}:${o.opp}`;
-      pill = `<span class="ch-pill ${cls}">${lbl}</span>`;
-    }
-    return `<div class="ch-card"><div class="ch-row">
-      <div class="ch-vs">${chAva(other)}<div class="ch-meta">
-        <div class="ch-nm">ты <span class="sword">⚔️</span> ${chEsc(other)}</div>
-        <div class="ch-subt">${chEsc(c.games?.title || '')} · ${chFmtDate(c.games?.starts_at, c.games?.sheet_date)}</div>
-      </div></div>${pill}
-    </div>${extra}</div>`;
-  }).join('');
+  html += `<div id="ch-mine-list"></div>`;
+  setTimeout(() => chRenderPaged(show, 'ch-mine-list', chCardMine), 0);
+  return html;
+}
+
+const CH_PAGE = 5;
+
+function chCardBoard(c) {
+  let pill = '';
+  if (c.status === 'pending') pill = '<span class="ch-pill ch-pill-wait">Ожидает</span>';
+  else if (c.status === 'accepted') pill = '<span class="ch-pill ch-pill-acc">В игре</span>';
+  else if (c.status === 'resolved') {
+    if (c.result === 'challenger_win') pill = `<span class="ch-pill ch-pill-win">${chEsc(c.challenger_name)} ${c.challenger_points}:${c.opponent_points}</span>`;
+    else if (c.result === 'opponent_win') pill = `<span class="ch-pill ch-pill-win">${chEsc(c.opponent_name)} ${c.opponent_points}:${c.challenger_points}</span>`;
+    else pill = `<span class="ch-pill ch-pill-draw">Ничья ${c.challenger_points}:${c.opponent_points}</span>`;
+  }
+  return `<div class="ch-card"><div class="ch-row">
+    <div class="ch-vs">${chAva(c.challenger_name)}<div class="ch-meta">
+      <div class="ch-nm">${chEsc(c.challenger_name)} <span class="sword">⚔️</span> ${chEsc(c.opponent_name)}</div>
+      <div class="ch-subt">${chEsc(c.games?.title || '')} · ${chFmtDate(c.games?.starts_at, c.games?.sheet_date)}</div>
+    </div></div>${pill}
+  </div></div>`;
+}
+
+function chRenderPaged(items, containerId, renderCard) {
+  let shown = CH_PAGE;
+  const render = () => {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    const visible = items.slice(0, shown);
+    el.innerHTML = visible.map(renderCard).join('') +
+      (shown < items.length ? `<button class="ch-btn ch-btn-out ch-more" style="width:100%;margin-top:4px">Показать ещё (${items.length - shown})</button>` : '');
+    el.querySelector('.ch-more')?.addEventListener('click', () => { shown += CH_PAGE; render(); });
+  };
+  render();
+}
+
+function chRenderBoard(list) {
+  let html = '<div class="ch-sec">Все дуэли</div>';
+  if (!list || !list.length) return html + '<div class="ch-empty">Пока нет дуэлей</div>';
+  html += `<div id="ch-board-list"></div>`;
+  setTimeout(() => chRenderPaged(list, 'ch-board-list', chCardBoard), 0);
+  return html;
 }
 
 function chRenderStandings(list) {

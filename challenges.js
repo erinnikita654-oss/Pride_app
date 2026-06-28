@@ -106,13 +106,6 @@ export function registerChallengeRoutes(app, deps) {
     if (dl && Date.now() > dl.getTime())
       return res.status(400).json({ error: 'Приём вызовов на этот турнир закрыт (после 20:00)' });
 
-    // нет повторного вызова после отказа на этот турнир (для этой пары)
-    const { data: declined } = await supabase.from('challenges').select('id')
-      .eq('tournament_id', tournamentId).eq('status', 'declined')
-      .or(`and(challenger_id.eq.${challengerId},opponent_id.eq.${opponentId}),and(challenger_id.eq.${opponentId},opponent_id.eq.${challengerId})`);
-    if (declined && declined.length)
-      return res.status(400).json({ error: 'Этот игрок уже отклонил вызов на этот турнир' });
-
     const { data, error } = await supabase.from('challenges')
       .insert({ tournament_id: tournamentId, challenger_id: String(challengerId), opponent_id: String(opponentId) })
       .select().single();
@@ -208,13 +201,36 @@ export function registerChallengeRoutes(app, deps) {
     res.json(await withNicks(data));
   });
 
-  // ---- Публичная доска активных дуэлей ----
+  // ---- Публичная доска дуэлей (активные + завершённые) ----
   app.get('/api/challenges/board', guard, async (req, res) => {
     const { data, error } = await supabase.from('challenges')
       .select('*, games(title, sheet_date, starts_at)')
-      .in('status', ['accepted', 'pending']).order('created_at', { ascending: false });
+      .in('status', ['accepted', 'pending', 'resolved']).order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     res.json(await withNicks(data));
+  });
+
+  // ---- Количество непросмотренных событий (для бейджа) ----
+  // Считает: входящие вызовы (pending, opponent=me) +
+  //          ответы на мои вызовы (accepted/declined, challenger=me, responded_at > since) +
+  //          результаты моих дуэлей (resolved, resolved_at > since).
+  app.get('/api/challenges/unseen/:telegramId', guard, async (req, res) => {
+    const id = req.params.telegramId;
+    const since = req.query.since || '1970-01-01T00:00:00Z';
+    let count = 0;
+    // входящие вызовы (всегда)
+    const { count: inc } = await supabase.from('challenges').select('id', { count: 'exact', head: true })
+      .eq('opponent_id', id).eq('status', 'pending');
+    count += (inc || 0);
+    // ответы на мои вызовы (accepted/declined после since)
+    const { count: resp } = await supabase.from('challenges').select('id', { count: 'exact', head: true })
+      .eq('challenger_id', id).in('status', ['accepted', 'declined']).gte('responded_at', since);
+    count += (resp || 0);
+    // результаты моих дуэлей (resolved после since)
+    const { count: res1 } = await supabase.from('challenges').select('id', { count: 'exact', head: true })
+      .or(`challenger_id.eq.${id},opponent_id.eq.${id}`).eq('status', 'resolved').gte('resolved_at', since);
+    count += (res1 || 0);
+    res.json({ count });
   });
 
   // ---- Таблица дуэлянтов (W–L–D) ----
