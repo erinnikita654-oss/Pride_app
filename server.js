@@ -8,6 +8,7 @@ import { google } from 'googleapis';
 import Rollbar from 'rollbar';
 import swaggerUi from 'swagger-ui-express';
 import { openapiSpec } from './openapi.js';
+import { registerChallengeRoutes } from './challenges.js';
 
 dotenv.config();
 
@@ -33,6 +34,11 @@ if (process.env.DOCS_ENABLED === '1') {
   }));
   console.log('Swagger-документация включена: /api/docs');
 }
+
+// Конфиг для фронта: какие фичи включены.
+app.get('/api/config', (req, res) => res.json({
+  challengesEnabled: process.env.CHALLENGES_ENABLED === '1',
+}));
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -1030,6 +1036,11 @@ app.get('/api/suggest-nickname', async (req, res) => {
     .map(p => p.name);
 
   res.json({ exact: false, suggestions });
+});
+
+// Роуты фичи «Вызовы» (под флагом CHALLENGES_ENABLED).
+registerChallengeRoutes(app, {
+  supabase, fetchSheetLines, detectSheetStructure, findPlayerRow, ruDateToISO, SHEETS, SHEET_YEAR,
 });
 
 app.use(rollbar.errorHandler());
