@@ -291,6 +291,70 @@ export function registerChallengeRoutes(app, deps) {
     return { tournamentId, resolved, voided, total: (duels || []).length };
   }
 
+  // ---- Парсер расписания → турниры в games ----
+  // Формат:
+  //   День недели
+  //   ДД месяц, ЧЧ:ММ
+  //   Название (ссылка)
+  //   Описание (опционально)
+  //   (пустая строка — разделитель)
+  const RU_MONTHS_PARSE = {
+    'января':1,'февраля':2,'марта':3,'апреля':4,'мая':5,'июня':6,
+    'июля':7,'августа':8,'сентября':9,'октября':10,'ноября':11,'декабря':12,
+  };
+  function parseSchedule(text) {
+    const blocks = text.trim().split(/\n\s*\n/).filter(b => b.trim());
+    const results = [];
+    for (const block of blocks) {
+      const lines = block.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) continue;
+      // строка 0 — день недели (пропускаем), строка 1 — дата+время
+      let dateLineIdx = 0;
+      // если первая строка — день недели (Среда, Четверг...), пропускаем
+      if (/^(понедельник|вторник|среда|четверг|пятница|суббота|воскресенье)$/i.test(lines[0])) dateLineIdx = 1;
+      const dateLine = lines[dateLineIdx];
+      const dm = dateLine.match(/(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)[,.]?\s*(\d{1,2}):(\d{2})/i);
+      if (!dm) continue;
+      const day = parseInt(dm[1]), month = RU_MONTHS_PARSE[dm[2].toLowerCase()], hh = parseInt(dm[3]), mm = parseInt(dm[4]);
+      const year = month >= 1 ? 2026 : 2026; // текущий год
+      const pad = n => String(n).padStart(2, '0');
+      const sheetDate = `${pad(day)}.${pad(month)}.${year}`;
+      const mskOffset = 3;
+      const startsAt = new Date(Date.UTC(year, month - 1, day, hh - mskOffset, mm)).toISOString();
+
+      const titleLine = lines[dateLineIdx + 1] || '';
+      const linkMatch = titleLine.match(/\((https?:\/\/[^)]+)\)/);
+      const link = linkMatch ? linkMatch[1] : null;
+      const title = titleLine.replace(/\s*\(https?:\/\/[^)]+\)\s*/g, '').trim();
+
+      const description = lines.slice(dateLineIdx + 2).join(' ').trim() || null;
+
+      results.push({ title, sheetDate, startsAt, link, description, day, month, year });
+    }
+    return results;
+  }
+
+  app.post('/api/challenges/schedule', guard, async (req, res) => {
+    const { text } = req.body || {};
+    if (!text) return res.status(400).json({ error: 'Передайте text с расписанием' });
+    const parsed = parseSchedule(text);
+    if (!parsed.length) return res.status(400).json({ error: 'Не удалось распознать ни одного турнира' });
+    const created = [];
+    const pad = n => String(n).padStart(2, '0');
+    for (const t of parsed) {
+      // проверяем дубль по sheet_date
+      const { data: existing } = await supabase.from('games').select('id').eq('sheet_date', t.sheetDate).limit(1);
+      if (existing && existing.length) { created.push({ ...t, skipped: true }); continue; }
+      const { data: row, error } = await supabase.from('games').insert({
+        title: t.title, date: t.startsAt, starts_at: t.startsAt,
+        sheet_date: t.sheetDate, link: t.link, description: t.description, max_players: 9,
+      }).select().single();
+      if (error) { created.push({ ...t, error: error.message }); continue; }
+      created.push({ ...t, id: row.id, inserted: true });
+    }
+    res.json({ total: parsed.length, created });
+  });
+
   // экспорт для возможного авто-вызова из server.js
-  return { resolveTournament };
+  return { resolveTournament, parseSchedule };
 }
