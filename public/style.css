@@ -1688,3 +1688,60 @@ body.nickname-active #toast {
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.success { border-color: rgba(100, 200, 100, 0.4); background: #0d1f0d; }
 .toast.error { border-color: rgba(192, 57, 43, 0.4); background: #1f0d0d; }
+
+/* ===== Фича «Вызовы» ===== */
+.ch-h1 { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.ch-sec { font-size: 11px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 1.5px; margin: 18px 4px 10px; }
+.ch-empty { color: var(--hint); font-size: 13px; padding: 8px 4px; }
+
+.ch-badge { position: absolute; top: -2px; right: 4px; min-width: 16px; height: 16px; background: #e74c3c; color: #fff; border-radius: 9px; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 0 0 2px #0f0f0f; }
+
+.ch-card { background: var(--bg-card); border: 1px solid var(--gold-border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.ch-card.incoming { border-color: rgba(231,76,60,0.35); }
+.ch-vs { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.ch-vs > .ch-meta { min-width: 0; }
+.ch-ava { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#e8c87a,var(--gold)); color: #1a1208; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex: 0 0 auto; }
+.ch-ava.dim { background: #333; color: #999; }
+.ch-nm { font-weight: 700; color: var(--text); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-nm .sword { color: var(--gold); }
+.ch-subt { font-size: 12px; color: var(--hint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ch-btns { display: flex; gap: 8px; margin-top: 12px; }
+.ch-btn { flex: 1; padding: 11px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.ch-btn-gold { background: var(--gold); color: #1a1208; }
+.ch-btn-out { background: transparent; border: 1px solid var(--gold-border); color: var(--hint); }
+.ch-btn-sm { flex: 0 0 auto; padding: 9px 18px; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--gold); color: #1a1208; }
+.ch-pill { flex: 0 0 auto; white-space: nowrap; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+.ch-pill-wait { background: rgba(201,162,39,0.15); color: var(--gold); }
+.ch-pill-acc { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.ch-pill-win { background: rgba(46,204,113,0.15); color: #2ecc71; }
+.ch-pill-loss { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.ch-pill-draw { background: rgba(255,255,255,0.1); color: var(--hint); }
+.ch-pill-void { background: rgba(255,255,255,0.06); color: var(--hint); }
+
+.ch-tourn { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ch-tourn .ch-meta { min-width: 0; }
+
+table.ch-std { width: 100%; border-collapse: collapse; }
+table.ch-std th { font-size: 10px; color: var(--hint); text-transform: uppercase; letter-spacing: 1px; text-align: right; padding: 6px 4px; font-weight: 700; }
+table.ch-std th:nth-child(2) { text-align: left; }
+table.ch-std td { padding: 9px 4px; font-size: 14px; color: var(--text); text-align: right; border-top: 1px solid rgba(255,255,255,0.05); }
+table.ch-std td:nth-child(2) { text-align: left; font-weight: 600; }
+table.ch-std tr.me td { background: rgba(201,162,39,0.07); }
+table.ch-std .gold { color: var(--gold); }
+
+/* На 5 вкладок подписи не влезают — навигация icon-only */
+.bottom-nav.nav5 .nav-label { display: none !important; }
+.bottom-nav.nav5 .nav-item { padding: 12px 14px; }
+.bottom-nav.nav5 .nav-item.active { background: #2e2e2e; }
+
+.duel-result-card { background: #121212; border: 1px solid var(--gold-border); border-radius: 22px; padding: 28px 22px; text-align: center; width: 100%; max-width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.duel-result-card .drc-emoji { font-size: 44px; }
+.duel-result-card .drc-title { font-size: 20px; font-weight: 800; color: var(--text); margin: 8px 0 4px; }
+.duel-result-card .drc-sub { font-size: 12px; color: var(--hint); margin-bottom: 18px; }
+.duel-result-card .drc-score { display: flex; align-items: center; justify-content: center; gap: 16px; }
+.duel-result-card .drc-pts { font-size: 26px; font-weight: 800; }
+
+/* Скрытие новой вкладки/бейджа (в проекте нет глобального .hidden) */
+.nav-item.nav-challenges.hidden { display: none !important; }
+.ch-badge.hidden { display: none !important; }

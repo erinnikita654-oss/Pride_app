@@ -7,16 +7,21 @@ const token = process.env.TELEGRAM_BOT_TOKEN;
 const appUrl = process.env.APP_URL;
 
 if (!token) {
-  console.error('TELEGRAM_BOT_TOKEN не задан');
-  process.exit(1);
+  console.error('TELEGRAM_BOT_TOKEN не задан — бот не запущен');
+  // не exit, чтобы server.js работал локально без бота
 }
 
 console.log('APP_URL:', appUrl);
-console.log('Бот покерного клуба запущен...');
 
-const bot = new TelegramBot(token, { polling: true });
+const bot = token ? new TelegramBot(token, { polling: true }) : null;
+if (bot) console.log('Бот покерного клуба запущен...');
 
-bot.onText(/\/start/, async (msg) => {
+// Глобальная ссылка, чтобы challenges.js мог слать уведомления без прямого импорта bot.js
+globalThis.__prideBot = bot;
+
+export { bot };
+
+if (bot) bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const firstName = msg.from.first_name || 'Игрок';
 
@@ -39,16 +44,16 @@ bot.onText(/\/start/, async (msg) => {
   }
 });
 
-bot.onText(/\/help/, async (msg) => {
+if (bot) bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
   await bot.sendMessage(chatId, `📖 Команды:\n\n/start — главное меню\n/help — помощь`);
 });
 
-bot.on('polling_error', (error) => {
+if (bot) bot.on('polling_error', (error) => {
   console.error('Ошибка polling:', error.message);
 });
 
 process.on('SIGINT', () => {
-  bot.stopPolling();
+  if (bot) bot.stopPolling();
   process.exit(0);
 });

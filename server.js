@@ -8,15 +8,34 @@ import { google } from 'googleapis';
 import Rollbar from 'rollbar';
 import swaggerUi from 'swagger-ui-express';
 import { openapiSpec } from './openapi.js';
+import { registerChallengeRoutes } from './challenges.js';
 
 dotenv.config();
 
+// Удобство локального запуска: если задан только JSON-ключ сервис-аккаунта,
+// а base64-вариант нет — генерируем его сами (на проде B64 задан в Railway).
+if (!process.env.GOOGLE_SERVICE_ACCOUNT_B64 && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  process.env.GOOGLE_SERVICE_ACCOUNT_B64 = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY).toString('base64');
+}
+
+// Серверный Rollbar — только если задан корректный server-токен (scope post_server_item).
+// Прежний хардкод был client-токеном (post_client_item) → серверные отчёты падали с
+// "insufficient privileges". Локально/без токена Rollbar выключен.
+const ROLLBAR_SERVER_TOKEN = process.env.ROLLBAR_SERVER_TOKEN;
 const rollbar = new Rollbar({
-  accessToken: '7e0282d8ad5b448fbdf25c0e7455e8a2',
-  captureUncaught: true,
-  captureUnhandledRejections: true,
+  accessToken: ROLLBAR_SERVER_TOKEN || 'disabled',
+  enabled: !!ROLLBAR_SERVER_TOKEN,
+  captureUncaught: !!ROLLBAR_SERVER_TOKEN,
+  captureUnhandledRejections: !!ROLLBAR_SERVER_TOKEN,
   environment: 'production',
 });
+
+// Когда Rollbar выключен (локально) — ловим необработанные исключения сами:
+// логируем настоящую ошибку и НЕ роняем сервер (удобно для тестирования).
+if (!ROLLBAR_SERVER_TOKEN) {
+  process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e?.stack || e));
+  process.on('uncaughtException', (e) => console.error('[uncaughtException]', e?.stack || e));
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -33,6 +52,11 @@ if (process.env.DOCS_ENABLED === '1') {
   }));
   console.log('Swagger-документация включена: /api/docs');
 }
+
+// Конфиг для фронта: какие фичи включены.
+app.get('/api/config', (req, res) => res.json({
+  challengesEnabled: process.env.CHALLENGES_ENABLED === '1',
+}));
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -1030,6 +1054,14 @@ app.get('/api/suggest-nickname', async (req, res) => {
     .map(p => p.name);
 
   res.json({ exact: false, suggestions });
+});
+
+// Роуты фичи «Вызовы» (под флагом CHALLENGES_ENABLED).
+// Бот для уведомлений: подключается, только если server.js вызван из index.js
+// (т.е. бот уже инициализирован). При локальном test-challenges.bat бота нет — null.
+registerChallengeRoutes(app, {
+  supabase, fetchSheetLines, detectSheetStructure, findPlayerRow, ruDateToISO, SHEETS, SHEET_YEAR,
+  get bot() { return globalThis.__prideBot || null; },
 });
 
 app.use(rollbar.errorHandler());
