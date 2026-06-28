@@ -12,6 +12,12 @@ import { registerChallengeRoutes } from './challenges.js';
 
 dotenv.config();
 
+// Удобство локального запуска: если задан только JSON-ключ сервис-аккаунта,
+// а base64-вариант нет — генерируем его сами (на проде B64 задан в Railway).
+if (!process.env.GOOGLE_SERVICE_ACCOUNT_B64 && process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+  process.env.GOOGLE_SERVICE_ACCOUNT_B64 = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY).toString('base64');
+}
+
 const rollbar = new Rollbar({
   accessToken: '7e0282d8ad5b448fbdf25c0e7455e8a2',
   captureUncaught: true,
