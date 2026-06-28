@@ -1057,8 +1057,11 @@ app.get('/api/suggest-nickname', async (req, res) => {
 });
 
 // Роуты фичи «Вызовы» (под флагом CHALLENGES_ENABLED).
+// Бот для уведомлений: подключается, только если server.js вызван из index.js
+// (т.е. бот уже инициализирован). При локальном test-challenges.bat бота нет — null.
 registerChallengeRoutes(app, {
   supabase, fetchSheetLines, detectSheetStructure, findPlayerRow, ruDateToISO, SHEETS, SHEET_YEAR,
+  get bot() { return globalThis.__prideBot || null; },
 });
 
 app.use(rollbar.errorHandler());

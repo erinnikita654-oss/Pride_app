@@ -14,8 +14,20 @@ const MAX_DUELS_PER_TOURNAMENT = 2;
 export function registerChallengeRoutes(app, deps) {
   const {
     supabase, fetchSheetLines, detectSheetStructure, findPlayerRow,
-    ruDateToISO, SHEETS, SHEET_YEAR,
+    ruDateToISO, SHEETS, SHEET_YEAR, bot,
   } = deps;
+
+  // Отправить уведомление в Telegram (best-effort, не ломает флоу при ошибке)
+  async function notify(telegramId, text) {
+    if (!bot) return;
+    try { await bot.sendMessage(telegramId, text, { parse_mode: 'HTML' }); }
+    catch (e) { console.error('[notify] не удалось отправить', telegramId, e.message); }
+  }
+
+  async function tournamentLabel(tournamentId) {
+    const { data: t } = await supabase.from('games').select('title, sheet_date').eq('id', tournamentId).single();
+    return t ? (t.title || t.sheet_date) : 'турнир';
+  }
 
   const enabled = () => process.env.CHALLENGES_ENABLED === '1';
   const guard = (req, res, next) => enabled() ? next() : res.status(404).json({ error: 'Раздел недоступен' });
@@ -110,11 +122,14 @@ export function registerChallengeRoutes(app, deps) {
       .insert({ tournament_id: tournamentId, challenger_id: String(challengerId), opponent_id: String(opponentId) })
       .select().single();
     if (error) {
-      // частичный уникальный индекс → активная дуэль для пары уже есть
       if (error.code === '23505')
         return res.status(409).json({ error: 'Дуэль с этим игроком на этот турнир уже есть' });
       return res.status(500).json({ error: error.message });
     }
+    // Уведомление 1: тебе бросили вызов
+    const chName = await nickOf(challengerId);
+    const tLabel = await tournamentLabel(tournamentId);
+    notify(opponentId, `⚔️ <b>${chName || 'Игрок'}</b> вызвал тебя на дуэль!\n\nТурнир: ${tLabel}\n\nОткрой приложение, чтобы принять или отклонить.`);
     res.json({ success: true, challenge: data });
   });
 
@@ -150,6 +165,10 @@ export function registerChallengeRoutes(app, deps) {
           .or(`challenger_id.eq.${uid},opponent_id.eq.${uid}`);
       }
     }
+    // Уведомление 2: твой вызов приняли
+    const opName = await nickOf(ch.opponent_id);
+    const tLabel2 = await tournamentLabel(ch.tournament_id);
+    notify(ch.challenger_id, `✅ <b>${opName || 'Игрок'}</b> принял твой вызов!\n\nТурнир: ${tLabel2}\n\nДуэль начнётся!`);
     res.json({ success: true });
   });
 
@@ -164,6 +183,10 @@ export function registerChallengeRoutes(app, deps) {
     const { error } = await supabase.from('challenges')
       .update({ status: 'declined', responded_at: new Date().toISOString() }).eq('id', ch.id);
     if (error) return res.status(500).json({ error: error.message });
+    // Уведомление 3: твой вызов отклонили
+    const opName3 = await nickOf(ch.opponent_id);
+    const tLabel3 = await tournamentLabel(ch.tournament_id);
+    notify(ch.challenger_id, `❌ <b>${opName3 || 'Игрок'}</b> отклонил твой вызов.\n\nТурнир: ${tLabel3}`);
     res.json({ success: true });
   });
 
@@ -287,6 +310,26 @@ export function registerChallengeRoutes(app, deps) {
       }
       await supabase.from('challenges')
         .update({ ...patch, resolved_at: new Date().toISOString() }).eq('id', ch.id);
+      // Уведомление 4: результат дуэли (обоим)
+      if (patch.status === 'resolved') {
+        const tLabel4 = await tournamentLabel(ch.tournament_id);
+        const winMsg = (winner, loser, wPts, lPts) =>
+          `🏆 <b>Результат дуэли</b>\n\n${tLabel4}\n\n<b>${winner}</b> ${wPts} : ${lPts} ${loser}\n\nПобеда!`;
+        const loseMsg = (winner, loser, wPts, lPts) =>
+          `😤 <b>Результат дуэли</b>\n\n${tLabel4}\n\n<b>${winner}</b> ${wPts} : ${lPts} ${loser}\n\nВ следующий раз повезёт!`;
+        const drawMsg = (a, b, pts) =>
+          `🤝 <b>Результат дуэли</b>\n\n${tLabel4}\n\n${a} ${pts} : ${pts} ${b}\n\nНичья!`;
+        if (patch.result === 'challenger_win') {
+          notify(ch.challenger_id, winMsg(chNick, opNick, chPts, opPts));
+          notify(ch.opponent_id, loseMsg(chNick, opNick, chPts, opPts));
+        } else if (patch.result === 'opponent_win') {
+          notify(ch.opponent_id, winMsg(opNick, chNick, opPts, chPts));
+          notify(ch.challenger_id, loseMsg(opNick, chNick, opPts, chPts));
+        } else {
+          notify(ch.challenger_id, drawMsg(chNick, opNick, chPts));
+          notify(ch.opponent_id, drawMsg(opNick, chNick, chPts));
+        }
+      }
     }
     return { tournamentId, resolved, voided, total: (duels || []).length };
   }
