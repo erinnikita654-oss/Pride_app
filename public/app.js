@@ -1306,19 +1306,22 @@ async function chUpdateBadge() {
 
 async function loadChallenges() {
   const box = document.getElementById('challenges-content');
+  if (!chConfig.challengesEnabled) { box.innerHTML = '<div class="ch-empty">Раздел недоступен</div>'; return; }
+  if (!telegramId) { box.innerHTML = '<div class="ch-empty">Откройте через Telegram, чтобы пользоваться вызовами</div>'; return; }
   box.innerHTML = '<div class="loading">Загрузка...</div>';
+  const arr = x => Array.isArray(x) ? x : [];
   try {
     const [tournaments, incoming, mine, standings] = await Promise.all([
-      fetch('/api/challenges/tournaments').then(r => r.json()),
-      fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`).then(r => r.json()),
-      fetch(`/api/challenges/mine/${encodeURIComponent(telegramId)}`).then(r => r.json()),
-      fetch('/api/challenges/standings').then(r => r.json()),
+      fetch('/api/challenges/tournaments').then(r => r.json()).catch(() => []),
+      fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
+      fetch(`/api/challenges/mine/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
+      fetch('/api/challenges/standings').then(r => r.json()).catch(() => []),
     ]);
     box.innerHTML =
-      chRenderTournaments(tournaments) +
-      chRenderIncoming(incoming) +
-      chRenderMine(mine) +
-      chRenderStandings(standings);
+      chRenderTournaments(arr(tournaments)) +
+      chRenderIncoming(arr(incoming)) +
+      chRenderMine(arr(mine)) +
+      chRenderStandings(arr(standings));
     chUpdateBadge();
   } catch (e) {
     box.innerHTML = '<div class="ch-empty">Ошибка загрузки</div>';

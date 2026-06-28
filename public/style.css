@@ -1741,3 +1741,7 @@ table.ch-std .gold { color: var(--gold); }
 .duel-result-card .drc-sub { font-size: 12px; color: var(--hint); margin-bottom: 18px; }
 .duel-result-card .drc-score { display: flex; align-items: center; justify-content: center; gap: 16px; }
 .duel-result-card .drc-pts { font-size: 26px; font-weight: 800; }
+
+/* Скрытие новой вкладки/бейджа (в проекте нет глобального .hidden) */
+.nav-item.nav-challenges.hidden { display: none !important; }
+.ch-badge.hidden { display: none !important; }
