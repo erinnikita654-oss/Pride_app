@@ -18,12 +18,24 @@ if (!process.env.GOOGLE_SERVICE_ACCOUNT_B64 && process.env.GOOGLE_SERVICE_ACCOUN
   process.env.GOOGLE_SERVICE_ACCOUNT_B64 = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY).toString('base64');
 }
 
+// Серверный Rollbar — только если задан корректный server-токен (scope post_server_item).
+// Прежний хардкод был client-токеном (post_client_item) → серверные отчёты падали с
+// "insufficient privileges". Локально/без токена Rollbar выключен.
+const ROLLBAR_SERVER_TOKEN = process.env.ROLLBAR_SERVER_TOKEN;
 const rollbar = new Rollbar({
-  accessToken: '7e0282d8ad5b448fbdf25c0e7455e8a2',
-  captureUncaught: true,
-  captureUnhandledRejections: true,
+  accessToken: ROLLBAR_SERVER_TOKEN || 'disabled',
+  enabled: !!ROLLBAR_SERVER_TOKEN,
+  captureUncaught: !!ROLLBAR_SERVER_TOKEN,
+  captureUnhandledRejections: !!ROLLBAR_SERVER_TOKEN,
   environment: 'production',
 });
+
+// Когда Rollbar выключен (локально) — ловим необработанные исключения сами:
+// логируем настоящую ошибку и НЕ роняем сервер (удобно для тестирования).
+if (!ROLLBAR_SERVER_TOKEN) {
+  process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e?.stack || e));
+  process.on('uncaughtException', (e) => console.error('[uncaughtException]', e?.stack || e));
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
