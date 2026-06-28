@@ -159,19 +159,46 @@ snapshot.mjs        — инструмент регрессионного тес
 | `POST /api/profile/set-nickname` | Установка ника (мин. 2 символа); upsert по `telegram_id`. При ошибке записи в Supabase отдаёт **500** (а не «молчаливый успех») — чтобы сбой БД был виден пользователю и в Rollbar, а не зацикливал экран ввода ника |
 | `GET /api/profile-stats/:telegramId` | Краткая статистика текущего месяца для профиля: очки, игры, лучший результат, место в рейтинге |
 
+### Дуэли (за флагом `CHALLENGES_ENABLED`)
+
+Все роуты регистрируются из `challenges.js` → `registerChallengeRoutes(app, deps)`, гейт `CHALLENGES_ENABLED=1`.
+
+| Эндпоинт | Описание |
+|---|---|
+| `GET /api/config` | `{ challengesEnabled }` — фронт узнаёт, включена ли фича |
+| `GET /api/challenges/tournaments` | Ближайшие турниры (starts_at >= now) |
+| `GET /api/challenges/players?exclude=id` | Список игроков для выбора соперника (без себя и дубль-аккаунтов) |
+| `POST /api/challenges` | Создать вызов (body: tournamentId, challengerId, opponentId). Валидации: себе нельзя, дубль-аккаунты, пара уже есть, дедлайн 20:00 |
+| `POST /api/challenges/:id/accept` | Принять вызов. Лимит 2 дуэли на игрока за турнир, авто-отмена висящих при заполнении слотов |
+| `POST /api/challenges/:id/decline` | Отклонить вызов |
+| `POST /api/challenges/:id/cancel` | Отозвать свой вызов (только challenger, только pending) |
+| `GET /api/challenges/incoming/:telegramId` | Входящие вызовы (pending, opponent=me) |
+| `GET /api/challenges/mine/:telegramId` | Мои дуэли (все статусы) |
+| `GET /api/challenges/board` | Публичная доска (pending + accepted + resolved) |
+| `GET /api/challenges/unseen/:telegramId?since=` | Кол-во непросмотренных событий (для бейджа): входящие + ответы + результаты |
+| `GET /api/challenges/standings` | Таблица дуэлянтов W–L–D (вью `challenge_standings`) |
+| `POST /api/challenges/resolve` | Расчёт дуэлей турнира по очкам из рейтингового листа (body: tournamentId) |
+| `POST /api/challenges/schedule` | Парсер расписания: text → турниры в `games` (дедупликация по sheet_date) |
+
+**Данные (Supabase):** `challenges` (id, tournament_id→games, challenger_id, opponent_id, status, result, points, timestamps). Статусы: pending → accepted/declined/cancelled/expired/auto_cancelled → resolved/void. Уникальный частичный индекс на пару за турнир. Вью `challenge_standings` (W–L–D). Таблица `games` расширена: `link`, `starts_at`, `sheet_date`.
+
+**Дубль-аккаунты** (`DUP_EXCLUDED`): telegram-id `199021029`, `601656888`, `55441020` — не участвуют в вызовах. Канонические: Асакура ХАО → `1719603564`, Ерин Никита → `200646836`.
+
 ## Фронтенд
 
-Нижняя навигация — 4 вкладки: **Игры** (`tab-games`), **Рейтинг** (`tab-rating`), **Легенды** (`tab-legends`), **Игроки** (`tab-players`).
+Нижняя навигация — 5 вкладок (при `CHALLENGES_ENABLED`): **Игры** (`tab-games`), **Рейтинг** (`tab-rating`), **Легенды** (`tab-legends`), **Игроки** (`tab-players`), **⚔️ Дуэли** (`tab-challenges`, icon-only навигация при 5 вкладках — класс `nav5`). Без флага — 4 вкладки, вкладка «Дуэли» скрыта.
 
-Дополнительные экраны (открываются поверх): все игры месяца, результаты игры, статистика игрока за месяц, общая статистика игрока, мои результаты, мои турниры, график прогресса (Chart.js: очки+победы по месяцам и средние очки за игру с линией клубного среднего; переключатель периода 3/6/12 месяцев, дефолт 6; переключатель базы сравнения «Весь клуб / ТОП-30»; тап по графику показывает значения всех линий за месяц — `interaction.mode: 'index'`), статистика клуба, профиль, о клубе, правила, регистрация ника, подсказка ника.
+Дополнительные экраны (открываются поверх): все игры месяца, результаты игры, статистика игрока за месяц, общая статистика игрока, мои результаты, мои турниры, выбор соперника для вызова (`#screen-picker`), график прогресса (Chart.js: очки+победы по месяцам и средние очки за игру с линией клубного среднего; переключатель периода 3/6/12 месяцев, дефолт 6; переключатель базы сравнения «Весь клуб / ТОП-30»; тап по графику показывает значения всех линий за месяц — `interaction.mode: 'index'`), статистика клуба, профиль, о клубе, правила, регистрация ника, подсказка ника.
 
-Идентификация: внутри Telegram — `window.Telegram.WebApp` (telegram id), в браузере — ник в `localStorage` (`pride_nickname`).
+Идентификация: внутри Telegram — `window.Telegram.WebApp` (telegram id), в браузере — ник в `localStorage` (`pride_nickname`). **Dev-login:** параметр `?dev=<telegram_id>` в URL позволяет зайти как любой игрок для тестирования вне Telegram (два окна = два игрока).
 
 **Промо графика прогресса** (`#progress-promo`): bottom-sheet «Посмотри свой прогресс» с бейджем NEW. Показывается **один раз** всем вошедшим (с известным ником) при старте — `maybeShowProgressPromo()` в конце `initAuth`. Факт показа и выбранное действие хранятся в `localStorage` (`pride_progress_promo_seen`: `shown` → затем `open` / `later` / `backdrop`). Кнопка «Открыть график» открывает экран прогресса (`openProgressChart(nick, 'promo')`), «Позже» и тап по затемнению — закрывают. Флаг клиентский (на устройство/браузер), не на аккаунт.
 
 ## Telegram-бот
 
-`/start` — приветствие + inline-кнопка «Открыть клуб» (web_app, url из `APP_URL`); `/help` — список команд. Long polling.
+`/start` — приветствие + inline-кнопка «Открыть клуб» (web_app, url из `APP_URL`); `/help` — список команд. Long polling. Бот **опционален**: без `TELEGRAM_BOT_TOKEN` сервер стартует без бота (удобно для локального тестирования через `test-challenges.bat`). Ссылка на бот прокидывается через `globalThis.__prideBot`.
+
+**Уведомления по дуэлям** (best-effort, HTML): 1) оппоненту — «тебе бросили вызов»; 2) вызывающему — «принят»; 3) вызывающему — «отклонён»; 4) обоим — результат дуэли (счёт). Напоминание перед 20:00 — планируется (крон).
 
 ## Аналитика и мониторинг
 
@@ -188,11 +215,13 @@ snapshot.mjs        — инструмент регрессионного тес
 | `GOOGLE_SERVICE_ACCOUNT_B64` | JSON сервисного аккаунта в base64 (доступ к приватной таблице) |
 | `PORT` | порт сервера (дефолт 3000) |
 | `DOCS_ENABLED` | `1` — включить Swagger-доки на `/api/docs` (по умолчанию выключены) |
+| `CHALLENGES_ENABLED` | `1` — включить фичу «Дуэли» (вкладка ⚔️, эндпоинты `/api/challenges/*`). По умолчанию выключена |
+| `ROLLBAR_SERVER_TOKEN` | Серверный токен Rollbar (scope `post_server_item`). Без него серверный Rollbar выключен, ошибки пишутся в stdout |
 | `CACHE_TTL_MS`, `HISTORICAL_TTL_MS` | переопределение TTL кэша листов (дефолты 5 мин / 12 ч) |
 
 ## Разработка и тестирование
 
-Запуск: `npm start` (сервер+бот) или `node server.js` (только API, без бота).
+Запуск: `npm start` (сервер+бот) или `node server.js` (только API, без бота). Для тестирования фичи «Дуэли» — `test-challenges.bat` (ставит `CHALLENGES_ENABLED=1`, без бота). PDF-инструкция: `docs/Тестирование-Вызовы.pdf`. Концепт: `docs/CHALLENGES_CONCEPT.md`. SQL-миграция: `docs/migrations/2026-06-28_challenges.sql`.
 
 **Регрессионное тестирование** (`snapshot.mjs`): снимает ответы ~35 GET-кейсов всех эндпоинтов в JSON-файл.
 ```

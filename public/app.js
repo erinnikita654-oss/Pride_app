@@ -1262,7 +1262,7 @@ document.getElementById('progress-promo').addEventListener('click', (e) => {
   if (e.target.id === 'progress-promo') closeProgressPromo('backdrop');
 });
 
-// ===== Фича «Вызовы» (фронт) =====
+// ===== Фича «Дуэли» (фронт) =====
 let chConfig = { challengesEnabled: false };
 let chPickerPlayers = [];
 let chPickerTournament = null;
@@ -1479,7 +1479,7 @@ async function chAction(url, okMsg) {
   } catch (e) { showToast('Ошибка сети', 'error'); }
 }
 
-// Делегирование кликов на вкладке «Вызовы»
+// Делегирование кликов на вкладке «Дуэли»
 document.getElementById('challenges-content').addEventListener('click', (e) => {
   const btn = e.target.closest('button'); if (!btn) return;
   if (btn.classList.contains('ch-do-challenge')) openChallengePicker(btn.dataset.tid, btn.dataset.title);
