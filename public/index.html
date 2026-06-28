@@ -443,7 +443,20 @@
         <div class="ch-h1">⚔️ Вызовы</div>
         <div id="challenges-content"><div class="loading">Загрузка...</div></div>
       </section>
+
+      <!-- Экран выбора соперника для вызова -->
+      <section id="screen-picker" class="screen hidden">
+        <button class="back-btn" id="picker-back-btn">← Выбор соперника</button>
+        <div class="sub" id="picker-tournament" style="margin:0 4px 12px"></div>
+        <input id="picker-search" class="search-input" type="text" placeholder="🔍 Поиск игрока..." style="margin-bottom:14px">
+        <div id="picker-list" class="list"><div class="loading">Загрузка...</div></div>
+      </section>
     </main>
+  </div>
+
+  <!-- Модалка результата дуэли -->
+  <div id="duel-result-modal" class="promo-backdrop hidden" style="align-items:center;justify-content:center;padding:24px;z-index:200">
+    <div class="duel-result-card" id="duel-result-card"></div>
   </div>
 
   <!-- Экран ввода ника -->
@@ -468,19 +481,6 @@
       <button id="nick-suggest-yes" class="btn btn-register" style="margin-bottom:10px">Да, использовать этот ник</button>
       <button id="nick-suggest-no" class="btn" style="background:transparent;color:var(--hint)">Нет, оставить мой ник</button>
     </div>
-  </div>
-
-  <!-- Экран выбора соперника для вызова -->
-  <div id="screen-picker" class="screen hidden">
-    <button class="back-btn" id="picker-back-btn">← Выбор соперника</button>
-    <div class="sub" id="picker-tournament" style="margin:0 4px 12px"></div>
-    <input id="picker-search" class="search-input" type="text" placeholder="🔍 Поиск игрока..." style="margin-bottom:14px">
-    <div id="picker-list" class="list"><div class="loading">Загрузка...</div></div>
-  </div>
-
-  <!-- Модалка результата дуэли -->
-  <div id="duel-result-modal" class="promo-backdrop hidden" style="align-items:center;justify-content:center;padding:24px">
-    <div class="duel-result-card" id="duel-result-card"></div>
   </div>
 
   <!-- Нижняя навигация -->
