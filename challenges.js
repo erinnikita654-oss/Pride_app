@@ -60,6 +60,18 @@ export function registerChallengeRoutes(app, deps) {
     return count || 0;
   }
 
+  // ---- Список игроков, которых можно вызвать (app-юзеры, без себя и дубль-аккаунтов) ----
+  app.get('/api/challenges/players', guard, async (req, res) => {
+    const exclude = String(req.query.exclude || '');
+    const { data, error } = await supabase.from('users')
+      .select('telegram_id, first_name, username').order('first_name');
+    if (error) return res.status(500).json({ error: error.message });
+    const list = (data || [])
+      .filter(u => String(u.telegram_id) !== exclude && !DUP_EXCLUDED.has(String(u.telegram_id)) && u.first_name)
+      .map(u => ({ telegramId: String(u.telegram_id), name: u.first_name, username: u.username || null }));
+    res.json(list);
+  });
+
   // ---- Список ближайших турниров (для UI вызова) ----
   app.get('/api/challenges/tournaments', guard, async (req, res) => {
     const nowIso = new Date().toISOString();

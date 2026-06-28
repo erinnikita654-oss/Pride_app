@@ -3,7 +3,9 @@ tg.expand();
 tg.ready();
 
 const user = tg.initDataUnsafe?.user || null;
-const telegramId = user?.id || null;
+// dev-login: ?dev=<telegram_id> — войти как этот игрок для тестирования вне Telegram
+const devUid = new URLSearchParams(location.search).get('dev');
+const telegramId = user?.id || devUid || null;
 const username = user?.username || '';
 const firstName = user?.first_name || 'Игрок';
 
@@ -43,6 +45,7 @@ function switchTab(target) {
   if (target === 'rating') loadRating();
   if (target === 'legends') loadLegends();
   if (target === 'players') loadAllPlayers();
+  if (target === 'challenges') loadChallenges();
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -1259,4 +1262,223 @@ document.getElementById('progress-promo').addEventListener('click', (e) => {
   if (e.target.id === 'progress-promo') closeProgressPromo('backdrop');
 });
 
+// ===== Фича «Вызовы» (фронт) =====
+let chConfig = { challengesEnabled: false };
+let chPickerPlayers = [];
+let chPickerTournament = null;
+
+function chEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function chAva(name, dim) {
+  const l = (String(name || '?').trim()[0] || '?').toUpperCase();
+  return `<div class="ch-ava${dim ? ' dim' : ''}">${chEsc(l)}</div>`;
+}
+const CH_DOW = ['вс','пн','вт','ср','чт','пт','сб'];
+const CH_MON = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+function chFmtDate(iso, sheetDate) {
+  const d = iso ? new Date(iso) : null;
+  if (d && !isNaN(d)) {
+    const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+    return `${CH_DOW[d.getDay()]}, ${d.getDate()} ${CH_MON[d.getMonth()]} ${hh}:${mm}`;
+  }
+  return sheetDate || '';
+}
+
+async function initChallenges() {
+  try { chConfig = await (await fetch('/api/config')).json(); }
+  catch (e) { chConfig = { challengesEnabled: false }; }
+  if (!chConfig.challengesEnabled || !telegramId) return;
+  document.querySelector('.nav-challenges')?.classList.remove('hidden');
+  document.querySelector('.bottom-nav')?.classList.add('nav5');
+  chUpdateBadge();
+}
+
+async function chUpdateBadge() {
+  if (!chConfig.challengesEnabled || !telegramId) return;
+  try {
+    const inc = await (await fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`)).json();
+    const badge = document.getElementById('ch-nav-badge');
+    if (Array.isArray(inc) && inc.length) { badge.textContent = inc.length; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  } catch (e) {}
+}
+
+async function loadChallenges() {
+  const box = document.getElementById('challenges-content');
+  box.innerHTML = '<div class="loading">Загрузка...</div>';
+  try {
+    const [tournaments, incoming, mine, standings] = await Promise.all([
+      fetch('/api/challenges/tournaments').then(r => r.json()),
+      fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`).then(r => r.json()),
+      fetch(`/api/challenges/mine/${encodeURIComponent(telegramId)}`).then(r => r.json()),
+      fetch('/api/challenges/standings').then(r => r.json()),
+    ]);
+    box.innerHTML =
+      chRenderTournaments(tournaments) +
+      chRenderIncoming(incoming) +
+      chRenderMine(mine) +
+      chRenderStandings(standings);
+    chUpdateBadge();
+  } catch (e) {
+    box.innerHTML = '<div class="ch-empty">Ошибка загрузки</div>';
+  }
+}
+
+function chRenderTournaments(list) {
+  let html = '<div class="ch-sec">Ближайшие турниры</div>';
+  if (!list || !list.length) return html + '<div class="ch-empty">Пока нет предстоящих турниров</div>';
+  return html + list.map(t => `
+    <div class="ch-card"><div class="ch-tourn">
+      <div class="ch-meta"><div class="ch-nm">${chEsc(t.title)}</div><div class="ch-subt">${chFmtDate(t.starts_at, t.sheet_date)}</div></div>
+      <button class="ch-btn-sm ch-do-challenge" data-tid="${chEsc(t.id)}" data-title="${chEsc(t.title)}">⚔️ Вызвать</button>
+    </div></div>`).join('');
+}
+
+function chRenderIncoming(list) {
+  const inc = (list || []).filter(c => c.status === 'pending');
+  let html = `<div class="ch-sec">Входящие · ${inc.length}</div>`;
+  if (!inc.length) return html + '<div class="ch-empty">Нет новых вызовов</div>';
+  return html + inc.map(c => `
+    <div class="ch-card incoming">
+      <div class="ch-vs">${chAva(c.challenger_name)}<div class="ch-meta">
+        <div class="ch-nm">${chEsc(c.challenger_name)} <span class="sword">⚔️</span> ты</div>
+        <div class="ch-subt">${chEsc(c.games?.title || '')} · ${chFmtDate(c.games?.starts_at, c.games?.sheet_date)}</div>
+      </div></div>
+      <div class="ch-btns">
+        <button class="ch-btn ch-btn-gold ch-accept" data-id="${chEsc(c.id)}">Принять</button>
+        <button class="ch-btn ch-btn-out ch-decline" data-id="${chEsc(c.id)}">Отклонить</button>
+      </div>
+    </div>`).join('');
+}
+
+function chOutcome(c) {
+  const iAmCh = String(c.challenger_id) === String(telegramId);
+  const my = iAmCh ? c.challenger_points : c.opponent_points;
+  const opp = iAmCh ? c.opponent_points : c.challenger_points;
+  let won = null;
+  if (c.result === 'draw') won = 'draw';
+  else if (c.result === 'challenger_win') won = iAmCh ? 'win' : 'loss';
+  else if (c.result === 'opponent_win') won = iAmCh ? 'loss' : 'win';
+  return { my, opp, won };
+}
+
+function chRenderMine(list) {
+  const show = (list || []).filter(c =>
+    c.status === 'accepted' || c.status === 'resolved' || c.status === 'void' ||
+    (c.status === 'pending' && String(c.challenger_id) === String(telegramId)));
+  let html = '<div class="ch-sec">Мои дуэли</div>';
+  if (!show.length) return html + '<div class="ch-empty">Дуэлей пока нет</div>';
+  return html + show.map(c => {
+    const iAmCh = String(c.challenger_id) === String(telegramId);
+    const other = iAmCh ? c.opponent_name : c.challenger_name;
+    let pill = '', extra = '';
+    if (c.status === 'pending') {
+      pill = '<span class="ch-pill ch-pill-wait">Ожидает ответа</span>';
+      extra = `<button class="ch-btn-out ch-cancel" data-id="${chEsc(c.id)}" style="margin-top:10px;padding:7px 14px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer">Отозвать</button>`;
+    } else if (c.status === 'accepted') {
+      pill = '<span class="ch-pill ch-pill-acc">Принят · ждём результат</span>';
+    } else if (c.status === 'void') {
+      pill = '<span class="ch-pill ch-pill-void">Отмена (неявка)</span>';
+    } else if (c.status === 'resolved') {
+      const o = chOutcome(c);
+      const cls = o.won === 'win' ? 'ch-pill-win' : o.won === 'loss' ? 'ch-pill-loss' : 'ch-pill-draw';
+      const lbl = o.won === 'win' ? `Победа ${o.my}:${o.opp}` : o.won === 'loss' ? `Поражение ${o.my}:${o.opp}` : `Ничья ${o.my}:${o.opp}`;
+      pill = `<span class="ch-pill ${cls}">${lbl}</span>`;
+    }
+    return `<div class="ch-card"><div class="ch-row">
+      <div class="ch-vs">${chAva(other)}<div class="ch-meta">
+        <div class="ch-nm">ты <span class="sword">⚔️</span> ${chEsc(other)}</div>
+        <div class="ch-subt">${chEsc(c.games?.title || '')} · ${chFmtDate(c.games?.starts_at, c.games?.sheet_date)}</div>
+      </div></div>${pill}
+    </div>${extra}</div>`;
+  }).join('');
+}
+
+function chRenderStandings(list) {
+  let html = '<div class="ch-sec">Таблица дуэлянтов</div>';
+  if (!list || !list.length) return html + '<div class="ch-empty">Пока нет сыгранных дуэлей</div>';
+  const rows = list.map((r, i) => {
+    const me = String(r.player) === String(telegramId) ? ' class="me"' : '';
+    const place = i < 3 ? `<span class="gold">${i + 1}</span>` : (i + 1);
+    return `<tr${me}><td>${place}</td><td>${chEsc(r.name)}</td><td>${r.wins}</td><td>${r.losses}</td><td>${r.draws}</td></tr>`;
+  }).join('');
+  return html + `<div class="ch-card" style="padding:6px 12px"><table class="ch-std">
+    <tr><th>#</th><th>Игрок</th><th>В</th><th>П</th><th>Н</th></tr>${rows}</table></div>`;
+}
+
+async function chAction(url, okMsg) {
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telegramId }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { showToast(okMsg, 'success'); loadChallenges(); }
+    else showToast(j.error || 'Ошибка', 'error');
+  } catch (e) { showToast('Ошибка сети', 'error'); }
+}
+
+// Делегирование кликов на вкладке «Вызовы»
+document.getElementById('challenges-content').addEventListener('click', (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  if (btn.classList.contains('ch-do-challenge')) openChallengePicker(btn.dataset.tid, btn.dataset.title);
+  else if (btn.classList.contains('ch-accept')) chAction(`/api/challenges/${btn.dataset.id}/accept`, 'Вызов принят!');
+  else if (btn.classList.contains('ch-decline')) chAction(`/api/challenges/${btn.dataset.id}/decline`, 'Вызов отклонён');
+  else if (btn.classList.contains('ch-cancel')) chAction(`/api/challenges/${btn.dataset.id}/cancel`, 'Вызов отозван');
+});
+
+// --- Выбор соперника ---
+async function openChallengePicker(tournamentId, title) {
+  chPickerTournament = { id: tournamentId, title };
+  hideAllScreens();
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('screen-picker').classList.remove('hidden');
+  document.getElementById('picker-tournament').textContent = title || '';
+  document.getElementById('picker-search').value = '';
+  const listEl = document.getElementById('picker-list');
+  listEl.innerHTML = '<div class="loading">Загрузка...</div>';
+  try {
+    chPickerPlayers = await (await fetch(`/api/challenges/players?exclude=${encodeURIComponent(telegramId)}`)).json();
+    chRenderPicker(chPickerPlayers);
+  } catch (e) { listEl.innerHTML = '<div class="ch-empty">Ошибка загрузки</div>'; }
+}
+
+function chRenderPicker(players) {
+  const listEl = document.getElementById('picker-list');
+  if (!players.length) { listEl.innerHTML = '<div class="ch-empty">Никого не найдено</div>'; return; }
+  listEl.innerHTML = players.map(p => `
+    <div class="ch-card" style="padding:11px 14px"><div class="ch-row">
+      <div class="ch-vs">${chAva(p.name)}<div class="ch-meta">
+        <div class="ch-nm">${chEsc(p.name)}</div><div class="ch-subt">@${chEsc(p.username || '—')}</div>
+      </div></div>
+      <button class="ch-btn-sm ch-pick" data-oid="${chEsc(p.telegramId)}">Вызвать</button>
+    </div></div>`).join('');
+}
+
+document.getElementById('picker-search').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  chRenderPicker(q ? chPickerPlayers.filter(p => (p.name || '').toLowerCase().includes(q) || (p.username || '').toLowerCase().includes(q)) : chPickerPlayers);
+});
+
+document.getElementById('picker-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.ch-pick'); if (!btn) return;
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/challenges', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tournamentId: chPickerTournament.id, challengerId: telegramId, opponentId: btn.dataset.oid }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast('Вызов отправлен! ⚔️', 'success');
+      document.getElementById('screen-picker').classList.add('hidden');
+      switchTab('challenges');
+    } else { showToast(j.error || 'Ошибка', 'error'); btn.disabled = false; }
+  } catch (e2) { showToast('Ошибка сети', 'error'); btn.disabled = false; }
+});
+
+document.getElementById('picker-back-btn').addEventListener('click', () => {
+  document.getElementById('screen-picker').classList.add('hidden');
+  switchTab('challenges');
+});
+
 initAuth();
+initChallenges();
