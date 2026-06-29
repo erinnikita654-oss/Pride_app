@@ -1288,7 +1288,7 @@ function chFmtDate(iso, sheetDate) {
 async function initChallenges() {
   try { chConfig = await (await fetch('/api/config')).json(); }
   catch (e) { chConfig = { challengesEnabled: false }; }
-  if (!chConfig.challengesEnabled || !telegramId) return;
+  if (!chConfig.challengesEnabled) return;
   document.querySelector('.nav-challenges')?.classList.remove('hidden');
   document.querySelector('.bottom-nav')?.classList.add('nav5');
   chUpdateBadge();
