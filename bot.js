@@ -13,7 +13,9 @@ if (!token) {
 
 console.log('APP_URL:', appUrl);
 
-const bot = token ? new TelegramBot(token, { polling: true }) : null;
+const bot = token ? new TelegramBot(token, {
+  polling: { interval: 1000, params: { timeout: 30 } },
+}) : null;
 if (bot) console.log('Бот покерного клуба запущен...');
 
 // Глобальная ссылка, чтобы challenges.js мог слать уведомления без прямого импорта bot.js
@@ -50,6 +52,9 @@ if (bot) bot.onText(/\/help/, async (msg) => {
 });
 
 if (bot) bot.on('polling_error', (error) => {
+  // 409 Conflict = два инстанса бота (при деплое Railway держит старый контейнер).
+  // Не паникуем, не спамим stderr — старый контейнер умрёт через секунды.
+  if (error.message?.includes('409')) return;
   console.error('Ошибка polling:', error.message);
 });
 
