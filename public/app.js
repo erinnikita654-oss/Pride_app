@@ -1297,7 +1297,8 @@ async function initChallenges() {
 const CH_SEEN_KEY = 'pride_ch_last_seen';
 
 async function chUpdateBadge() {
-  if (!chConfig.challengesEnabled || !telegramId) return;
+  if (!chConfig.challengesEnabled) return;
+  if (!telegramId) return; // бейдж работает только с id
   try {
     const since = localStorage.getItem(CH_SEEN_KEY) || '1970-01-01T00:00:00Z';
     const r = await (await fetch(`/api/challenges/unseen/${encodeURIComponent(telegramId)}?since=${encodeURIComponent(since)}`)).json();
@@ -1316,14 +1317,14 @@ function chMarkSeen() {
 async function loadChallenges() {
   const box = document.getElementById('challenges-content');
   if (!chConfig.challengesEnabled) { box.innerHTML = '<div class="ch-empty">Раздел недоступен</div>'; return; }
-  if (!telegramId) { box.innerHTML = '<div class="ch-empty">Откройте через Telegram, чтобы пользоваться вызовами</div>'; return; }
   box.innerHTML = '<div class="loading">Загрузка...</div>';
   const arr = x => Array.isArray(x) ? x : [];
   try {
+    const tid = telegramId ? encodeURIComponent(telegramId) : null;
     const [tournaments, incoming, mine, board, standings] = await Promise.all([
       fetch('/api/challenges/tournaments').then(r => r.json()).catch(() => []),
-      fetch(`/api/challenges/incoming/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
-      fetch(`/api/challenges/mine/${encodeURIComponent(telegramId)}`).then(r => r.json()).catch(() => []),
+      tid ? fetch(`/api/challenges/incoming/${tid}`).then(r => r.json()).catch(() => []) : [],
+      tid ? fetch(`/api/challenges/mine/${tid}`).then(r => r.json()).catch(() => []) : [],
       fetch('/api/challenges/board').then(r => r.json()).catch(() => []),
       fetch('/api/challenges/standings').then(r => r.json()).catch(() => []),
     ]);
